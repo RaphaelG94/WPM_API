@@ -3084,11 +3084,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Data.PreojectMigration\\WPM_API.Data.ProjectMigration.csproj",
+      "projectUniqueName": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Data.PreojectMigration\\WPM_API.Data.ProjectMigration.csproj",
       "projectName": "WPM_API.Data.ProjectMigration",
-      "projectPath": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Data.PreojectMigration\\WPM_API.Data.ProjectMigration.csproj",
+      "projectPath": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Data.PreojectMigration\\WPM_API.Data.ProjectMigration.csproj",
       "packagesPath": "C:\\Users\\rapha\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Data.PreojectMigration\\obj\\",
+      "outputPath": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Data.PreojectMigration\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\rapha\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -3105,8 +3105,8 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "projectReferences": {
-            "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API_Data\\WPM_API_Data.csproj": {
-              "projectPath": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API_Data\\WPM_API_Data.csproj"
+            "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API_Data\\WPM_API_Data.csproj": {
+              "projectPath": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API_Data\\WPM_API_Data.csproj"
             }
           }
         }

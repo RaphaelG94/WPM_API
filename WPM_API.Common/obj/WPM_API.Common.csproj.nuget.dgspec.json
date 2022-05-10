@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Common\\WPM_API.Common.csproj": {}
+    "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Common\\WPM_API.Common.csproj": {}
   },
   "projects": {
-    "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Common\\WPM_API.Common.csproj": {
+    "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Common\\WPM_API.Common.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Common\\WPM_API.Common.csproj",
+        "projectUniqueName": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Common\\WPM_API.Common.csproj",
         "projectName": "WPM_API.Common",
-        "projectPath": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Common\\WPM_API.Common.csproj",
+        "projectPath": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Common\\WPM_API.Common.csproj",
         "packagesPath": "C:\\Users\\rapha\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.Common\\obj\\",
+        "outputPath": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.Common\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\rapha\\AppData\\Roaming\\NuGet\\NuGet.Config",

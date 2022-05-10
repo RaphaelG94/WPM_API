@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "4XInd64KC9GKemtKrKaEMe/LKy6Ni21jgQjfEJwdrbs9AuDe09NZMV5LNzreKCFeMhlxnZRWJxZRkL3NElbUsA==",
+  "dgSpecHash": "kC4rUrnB44F0CWP/RZyZaNzWHtfMP12OaJRanbQSwX38wwE+FOvdORk62cjwT0tDxjrrUtSrfkO273umJSg2HQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\rapha\\Projects\\repos\\WPKM_API\\WPM_API.TransferModels\\WPM_API.TransferModels.csproj",
+  "projectFilePath": "C:\\Users\\rapha\\Projects\\repos\\WPM_API\\WPM_API.TransferModels\\WPM_API.TransferModels.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

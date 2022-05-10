@@ -7,4 +7,4 @@ build_property.InvariantGlobalization =
 build_property.PlatformNeutralAssembly = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = WPM_API.Data.ProjectMigration
-build_property.ProjectDir = C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Data.PreojectMigration\
+build_property.ProjectDir = C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Data.PreojectMigration\
