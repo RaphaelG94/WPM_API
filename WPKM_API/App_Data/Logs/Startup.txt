@@ -1,0 +1,25 @@
+06.07.2017 12:09:33: 
+System.IO.FileNotFoundException: Could not find file 'C:\Users\agrossbach\Repositories\AZTA\Bitstream.Web\nlog.config'.
+File name: 'C:\Users\agrossbach\Repositories\AZTA\Bitstream.Web\nlog.config'
+   at System.IO.FileStream.OpenHandle(FileMode mode, FileShare share, FileOptions options)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize, FileOptions options)
+   at System.IO.FileStream..ctor(String path, FileMode mode, FileAccess access, FileShare share, Int32 bufferSize)
+   at System.Xml.XmlDownloadManager.GetStream(Uri uri, ICredentials credentials, IWebProxy proxy, RequestCachePolicy cachePolicy)
+   at System.Xml.XmlUrlResolver.GetEntity(Uri absoluteUri, String role, Type ofObjectToReturn)
+   at System.Xml.XmlTextReaderImpl.FinishInitUriString()
+   at System.Xml.XmlTextReaderImpl..ctor(String uriStr, XmlReaderSettings settings, XmlParserContext context, XmlResolver uriResolver)
+   at System.Xml.XmlReaderSettings.CreateReader(String inputUri, XmlParserContext inputContext)
+   at NLog.Config.XmlLoggingConfiguration..ctor(String fileName, Boolean ignoreErrors, LogFactory logFactory)
+   at NLog.Web.AspNetExtensions.ConfigureNLog(IHostingEnvironment env, String configFileRelativePath)
+   at Bitstream.Web.Code.Infrastructure.Logs.LogsExtensions.UseConfiguredLogs(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, IConfigurationRoot configurationRoot) in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Web\Code\Infrastructure\Logs\LogsExtensions.cs:line 26
+   at AMS.Startup.Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory) in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Web\Startup.cs:line 136
+
+06.07.2017 12:09:33: 
+System.Exception: logFactory not initialized
+   at Bitstream.Common.Logs.LogHolder.get_LogFactory() in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Common\Logs\LogHolder.cs:line 17
+   at Bitstream.Common.Logs.LogHolder.GetLogger(String name) in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Common\Logs\LogHolder.cs:line 40
+   at Bitstream.Common.Logs.LogHolder.get_MainLog() in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Common\Logs\LogHolder.cs:line 28
+   at AMS.Startup.<>c.<Configure>b__7_0(Exception ex) in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Web\Startup.cs:line 161
+   at System.Collections.Generic.List`1.ForEach(Action`1 action)
+   at AMS.Startup.Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory) in C:\Users\agrossbach\Repositories\AZTA\Bitstream.Web\Startup.cs:line 161
+

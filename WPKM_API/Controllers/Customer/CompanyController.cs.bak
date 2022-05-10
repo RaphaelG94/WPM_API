@@ -1,0 +1,105 @@
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace WPM_API.Controllers
+{
+    [Route("companies")]
+    public class CompanyController : BasisController
+    {
+        /// <summary>
+        /// Create a new company.
+        /// </summary>
+        /// <param name="companyAdd">New company</param>
+        /// <returns>Company</returns>
+        [HttpPost]
+        [Authorize(Policy = Constants.Roles.Customer)]
+        public IActionResult AddCompany([FromBody] CompanyViewModel companyAdd)
+        {
+            Company company = UnitOfWork.Companies.CreateEmpty();
+            company.CorporateName = companyAdd.CorporateName;
+            company.Description = companyAdd.Description;
+            company.FormOfOrganization = companyAdd.FormOfOrganization;
+            company.Country = companyAdd.Country;
+            company.PhoneNr = companyAdd.PhoneNr;
+            company.LinkWebsite = companyAdd.LinkWebsite;
+            company.Street = companyAdd.Street;
+            company.StreetNr = companyAdd.StreetNr;
+            company.Postcode = companyAdd.Postcode;
+            company.Type = companyAdd.Type;
+            company.CustomerId = companyAdd.CustomerId;
+            // Load Person db entry for expertId
+            var expertId = companyAdd.ExpertId;
+            if (expertId != "" && expertId != null)
+            {
+                Person expert = UnitOfWork.Persons.GetAll().Where(x => x.Id == expertId).SingleOrDefault();
+                if (expert != null)
+                {
+                    company.ExpertId = companyAdd.ExpertId;
+
+                    company.UpdatedDate = DateTime.Now;
+                    company.UpdatedByUserId = LoggedUser.Id;
+
+                    expert.CompanyId = company.Id;
+                }
+                else
+                {
+                    return BadRequest("The selected expert does not exist");
+                }
+            }
+            try
+            {
+                UnitOfWork.SaveChanges();
+            }
+            catch (Exception exc)
+            {
+                return BadRequest("Person could not be created " + exc.Message);
+            }
+
+            company = UnitOfWork.Companies.Get(company.Id);
+
+            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(company), _serializerSettings);
+            return new OkObjectResult(json);
+        }
+
+<<<<<<< HEAD
+        [HttpGet]
+        [Authorize(Constants.Policies.Customer)]
+        [Route("{customerId}")]
+        public IActionResult getCustomersCompanies([FromRoute] string customerId)
+        {
+            List<CompanyViewModel> companies = new List<CompanyViewModel>();
+            List<Company> dbEntries = UnitOfWork.Companies.GetAll()
+                                        .Where(x => x.CustomerId == customerId)
+                                        .ToList();
+
+            companies = Mapper.Map<List<Company>, List<CompanyViewModel>>(dbEntries);
+
+            // Serialize and return result
+=======
+        /// <summary>
+        /// Get all companies of a specific customer
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <returns></returns>
+        [HttpGet]
+        [Authorize(Constants.Roles.Customer)]
+        [Route("{customerId}")]
+        public IActionResult GetCompaniesOfCustomer([FromRoute] string customerId)
+        {
+            List<CompanyViewModel> companies = new List<CompanyViewModel>();
+            List<Company> dbEntries = UnitOfWork.Companies.GetAll().Where(x => x.CustomerId == customerId).ToList();
+            companies = Mapper.Map<List<Company>, List<CompanyViewModel>>(dbEntries);
+            // Serialize and return the result
+>>>>>>> feature/Refactor-DB
+            var json = JsonConvert.SerializeObject(companies, _serializerSettings);
+            return new OkObjectResult(json);
+        }
+    }
+}

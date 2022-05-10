@@ -1,0 +1,10 @@
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\bin\Debug\netstandard2.1\WPM_API.TransferModels.deps.json
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\bin\Debug\netstandard2.1\WPM_API.TransferModels.dll
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\bin\Debug\netstandard2.1\WPM_API.TransferModels.pdb
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.csproj.AssemblyReference.cache
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.AssemblyInfoInputs.cache
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.AssemblyInfo.cs
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.csproj.CoreCompileInputs.cache
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.dll
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.TransferModels\obj\Debug\netstandard2.1\WPM_API.TransferModels.pdb

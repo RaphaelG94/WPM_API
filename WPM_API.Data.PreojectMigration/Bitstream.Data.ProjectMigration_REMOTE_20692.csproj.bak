@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Migrations\20180921104532_34_Many2ManyCategoryShopItem.cs" />
+    <Compile Remove="Migrations\20180928110943_37_AddAttributesToGroupPolicyObject.cs" />
+    <Compile Remove="Migrations\20180928114605_37_AddAttributesToGroupPolicyObject.cs" />
+    <Compile Remove="Migrations\20181002133119_38_FinalizeConfigurationModels.cs" />
+    <Compile Remove="Migrations\20181002133546_38_FinalizeConfigurationModels.cs" />
+    <Compile Remove="Migrations\20181002134107_38_FinalizeConfigurationModels.cs" />
+    <Compile Remove="Migrations\20181002134440_38_FinalizeConfigurationModels.cs" />
+    <Compile Remove="Migrations\20181002135050_38_FinalizeConfigurationModels.cs" />
+    <Compile Remove="Migrations\20181130162914_44_FixMacAddress.cs" />
+    <Compile Remove="Migrations\20190124214523_46_NewClientDatasheetFields.cs" />
+    <Compile Remove="Migrations\20190128100834_47_BaseProperties.cs" />
+    <Compile Remove="Migrations\20190320134658_57_SetNameForKeyAzureCredential.cs" />
+    <Compile Remove="Migrations\20190326131206_60_CheckUpdates.cs" />
+    <Compile Remove="Migrations\20190326132419_61_Changes2.cs" />
+    <Compile Remove="Migrations\20190502103913_66_ClientParam.cs" />
+    <Compile Remove="Migrations\20190502104255_66_ClientParam.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="2.1.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bitstream.Data\Bitstream.Data.csproj" />
+  </ItemGroup>
+
+</Project>

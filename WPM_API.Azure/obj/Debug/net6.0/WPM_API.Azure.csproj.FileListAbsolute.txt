@@ -1,0 +1,15 @@
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.csproj.AssemblyReference.cache
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.AssemblyInfoInputs.cache
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.AssemblyInfo.cs
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.csproj.CoreCompileInputs.cache
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\bin\Debug\net6.0\WPM_API.Azure.deps.json
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\bin\Debug\net6.0\WPM_API.Azure.dll
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\bin\Debug\net6.0\WPM_API.Azure.pdb
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\bin\Debug\net6.0\WPM_API.FileRepository.dll
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\bin\Debug\net6.0\WPM_API.FileRepository.pdb
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.csproj.CopyComplete
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.dll
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\refint\WPM_API.Azure.dll
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\WPM_API.Azure.pdb
+C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Azure\obj\Debug\net6.0\ref\WPM_API.Azure.dll
