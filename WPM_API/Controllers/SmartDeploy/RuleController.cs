@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.FileRepository;
-using WPM_API.TransferModels.SmartDeploy;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Options;
+using WPM_API.TransferModels.SmartDeploy;
 using File = WPM_API.Data.DataContext.Entities.File;
 
 namespace WPM_API.Controllers
@@ -19,17 +15,21 @@ namespace WPM_API.Controllers
     [Route("rules")]
     public class RuleController : BasisController
     {
+        public RuleController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         public IActionResult GetRules()
         {
             var ruleList = UnitOfWork.Rules.GetAll("Type", "Data").ToList();
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<RulesViewModel>>(ruleList), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<RulesViewModel>>(ruleList), serializerSettings);
             return new OkObjectResult(json);
         }
 
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Systemhouse)]
-        public IActionResult AddRule ([FromBody] RuleAddViewModel addRule)
+        public IActionResult AddRule([FromBody] RuleAddViewModel addRule)
         {
             Rule newRule = Mapper.Map<Rule>(addRule);
             UnitOfWork.Rules.MarkForInsert(newRule, GetCurrentUser().Id);
@@ -39,13 +39,13 @@ namespace WPM_API.Controllers
             }
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<RulesViewModel>(newRule), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<RulesViewModel>(newRule), serializerSettings);
             return Ok(json);
         }
 
         [HttpPut]
         [Authorize(Policy = Constants.Policies.Systemhouse)]
-        public IActionResult UpdateRule ([FromBody] RuleAddViewModel updateRule)
+        public IActionResult UpdateRule([FromBody] RuleAddViewModel updateRule)
         {
             Rule toUpdate = UnitOfWork.Rules.GetOrNull(updateRule.Id, "Type", "Data");
 
@@ -63,13 +63,14 @@ namespace WPM_API.Controllers
             {
                 toUpdate.Path = updateRule.Path;
                 //toUpdate.Architecture = updateRule.Architecture;
-            } else
+            }
+            else
             {
                 toUpdate.Data = Mapper.Map<File>(updateRule.Data);
                 toUpdate.Data.Guid = toUpdate.Data.Id;
             }
             List<Software> softwares = UnitOfWork.Software.GetAll("TaskInstall").Where(x => x.RuleDetection.Id == toUpdate.Id).ToList();
-            foreach(Software sw in softwares)
+            foreach (Software sw in softwares)
             {
                 sw.TaskInstall.VersionNr = updateRule.VersionNr;
             }
@@ -82,9 +83,10 @@ namespace WPM_API.Controllers
         [HttpDelete]
         [Authorize(Policy = Constants.Policies.Systemhouse)]
         [Route("{ruleId}")]
-        public IActionResult DeleteRule ([FromRoute] string ruleId)
+        public IActionResult DeleteRule([FromRoute] string ruleId)
         {
-            using (var unitOfWork = CreateUnitOfWork()) {
+            using (var unitOfWork = CreateUnitOfWork())
+            {
                 Rule toDelete = unitOfWork.Rules.GetOrNull(ruleId);
                 if (toDelete == null)
                 {
@@ -98,7 +100,8 @@ namespace WPM_API.Controllers
                     if (software.RuleApplicability != null && software.RuleApplicability.Id == ruleId)
                     {
                         software.RuleApplicability = null;
-                    } else if (software.RuleDetection != null && software.RuleDetection.Id == ruleId)
+                    }
+                    else if (software.RuleDetection != null && software.RuleDetection.Id == ruleId)
                     {
                         software.RuleDetection = null;
                     }
@@ -122,7 +125,7 @@ namespace WPM_API.Controllers
             result.RuleApplicability = Mapper.Map<RuleViewModel>(software.RuleApplicability);
             result.RuleDetection = Mapper.Map<RuleViewModel>(software.RuleDetection);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return Ok(json);
         }
@@ -131,9 +134,9 @@ namespace WPM_API.Controllers
         [Route("upload")]
         public async Task<IActionResult> UploadFileAsync([FromForm] IFormFile file)
         {
-            FileRepository.FileRepository software = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             string id = await software.UploadFile(file.OpenReadStream());
-            var json = JsonConvert.SerializeObject(new { Id = id }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -143,7 +146,7 @@ namespace WPM_API.Controllers
         {
             List<string> types = new List<string>();
             types.Add("file_exists");
-            var json = JsonConvert.SerializeObject(types, _serializerSettings);
+            var json = JsonConvert.SerializeObject(types, serializerSettings);
             return new OkObjectResult(json);
         }
     }

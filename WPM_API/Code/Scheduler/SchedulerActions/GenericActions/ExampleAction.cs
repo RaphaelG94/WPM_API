@@ -1,5 +1,4 @@
-﻿using WPM_API.Common.Logs;
-using WPM_API.Code.Scheduler.SchedulerModels.GenericActionModels;
+﻿using WPM_API.Code.Scheduler.SchedulerModels.GenericActionModels;
 
 namespace WPM_API.Code.Scheduler.SchedulerActions.GenericActions
 {
@@ -11,7 +10,7 @@ namespace WPM_API.Code.Scheduler.SchedulerActions.GenericActions
 
         protected override void DoProcess(ExampleActionModel actionModel)
         {
-            LogHolder.MainLog.Info("Example Action fired - " + actionModel.Value);
+            // LogHolder.MainLog.Info("Example Action fired - " + actionModel.Value);
         }
     }
 }

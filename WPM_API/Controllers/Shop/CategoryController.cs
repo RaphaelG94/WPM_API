@@ -1,11 +1,12 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Linq;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
@@ -17,6 +18,9 @@ namespace WPM_API.Controllers
     [Route("/shop/categories")]
     public class CategoryController : BasisController
     {
+        public CategoryController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
 
         /// <summary>
         /// Get all Categories.
@@ -30,7 +34,7 @@ namespace WPM_API.Controllers
             {
                 CategoryList = unitOfWork.Categories.GetAll().Where(x => x.Type.Equals(CategoryType.ShopItem)).ToList();
             }
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<Category>, List<CategoryViewModel>>(CategoryList), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<Category>, List<CategoryViewModel>>(CategoryList), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -54,7 +58,7 @@ namespace WPM_API.Controllers
                 newCategory.Type = CategoryType.ShopItem;
                 unitOfWork.Categories.MarkForInsert(newCategory);
                 unitOfWork.SaveChanges();
-                json = JsonConvert.SerializeObject(Mapper.Map<CategoryViewModel>(newCategory), _serializerSettings);
+                json = JsonConvert.SerializeObject(Mapper.Map<CategoryViewModel>(newCategory), serializerSettings);
             }
 
             return new OkObjectResult(json);
@@ -86,7 +90,7 @@ namespace WPM_API.Controllers
             }
 
             // Category was changed and is returned.
-            var json = JsonConvert.SerializeObject(Mapper.Map<CategoryViewModel>(dbCategory), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<CategoryViewModel>(dbCategory), serializerSettings);
             return new OkObjectResult(json);
         }
     }

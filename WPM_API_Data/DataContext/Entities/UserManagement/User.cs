@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using WPM_API.Data.DataContext.Interfaces;
-using WPM_API.Data.Extensions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class User : IEntity, IDeletable
     {
@@ -45,16 +40,16 @@ namespace  WPM_API.Data.DataContext.Entities
         public string Email { get; set; }
         public bool Active { get; set; }
 
-        public string CustomerId { get; set; }
+        public string? CustomerId { get; set; }
         [Required]
         public string SystemhouseId { get; set; }
 
-        public string CreatedByUserId { get; set; }
+        public string? CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
         public Boolean Deletable { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
 
         public virtual List<UserRole> UserRoles { get; set; }
@@ -69,7 +64,7 @@ namespace  WPM_API.Data.DataContext.Entities
         /// Der zugewiesene Kunde, wenn der User ein Login für einen Kunden ist
         /// </summary>
         [ForeignKey(nameof(CustomerId))]
-        public Customer Customer { get; set; }
+        public Customer? Customer { get; set; }
 
         //[ForeignKey(nameof(UpdatedByUserId))]
         [InverseProperty(nameof(UpdatedUsers))]
@@ -95,7 +90,7 @@ namespace  WPM_API.Data.DataContext.Entities
             }
         }
 
-        
+
     }
 
     //internal class UserConfiguration : EntityMappingConfiguration<User>

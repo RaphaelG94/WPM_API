@@ -1,12 +1,12 @@
-﻿using WPM_API.Common;
-using DATA = WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Models;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers
 {
@@ -14,12 +14,16 @@ namespace WPM_API.Controllers
     [Route("device-properties")]
     public class DevicePropertyController : BasisController
     {
+        public DevicePropertyController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         public IActionResult GetProperties()
         {
             // Get Properties from Database
             var propList = Mapper.Map<List<DevicePropertyViewModel>>(UnitOfWork.ClientProperties.GetAll("Category").ToList());
-            var json = JsonConvert.SerializeObject(propList, _serializerSettings);
+            var json = JsonConvert.SerializeObject(propList, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -70,7 +74,7 @@ namespace WPM_API.Controllers
             }
 
             result = Mapper.Map<DevicePropertyViewModel>(property);
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -79,23 +83,23 @@ namespace WPM_API.Controllers
             using (var unitOfWork = CreateUnitOfWork())
             {
                 DATA.ClientProperty property = unitOfWork.ClientProperties.CreateEmpty();
-            property.Command = prop.Command;
-            property.PropertyName = prop.PropertyName;
-            property.ParameterName = prop.ParameterName;
-            DATA.Category c = unitOfWork.ClientProperties.GetAll("Category").Select(x => x.Category).FirstOrDefault(x => x.Name.Equals(prop.Category.Name));
-            if (c == null)
-            {
-                // new category
-                property.Category = new DATA.Category() { Name = prop.Category.Name, Type = DATA.CategoryType.DeviceProperty };
-            }
-            else
-            {
-                property.Category = c;
-                property.Category.Type = DATA.CategoryType.DeviceProperty;
-            }
-            unitOfWork.ClientProperties.MarkForInsert(property);
-            unitOfWork.SaveChanges();
-            return property;
+                property.Command = prop.Command;
+                property.PropertyName = prop.PropertyName;
+                property.ParameterName = prop.ParameterName;
+                DATA.Category c = unitOfWork.ClientProperties.GetAll("Category").Select(x => x.Category).FirstOrDefault(x => x.Name.Equals(prop.Category.Name));
+                if (c == null)
+                {
+                    // new category
+                    property.Category = new DATA.Category() { Name = prop.Category.Name, Type = DATA.CategoryType.DeviceProperty };
+                }
+                else
+                {
+                    property.Category = c;
+                    property.Category.Type = DATA.CategoryType.DeviceProperty;
+                }
+                unitOfWork.ClientProperties.MarkForInsert(property);
+                unitOfWork.SaveChanges();
+                return property;
             }
         }
 
@@ -121,7 +125,7 @@ namespace WPM_API.Controllers
             property.PropertyName = prop.PropertyName;
             UnitOfWork.SaveChanges();
             result = Mapper.Map<DevicePropertyViewModel>(property);
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -131,7 +135,7 @@ namespace WPM_API.Controllers
         {
             var list = UnitOfWork.ClientProperties.GetAll("Category").Where(y => y.Category.Type.Equals(DATA.CategoryType.DeviceProperty)).Select(x => x.Category).Distinct().ToList();
             var result = Mapper.Map<List<CategoryViewModel>>(list);
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
     }

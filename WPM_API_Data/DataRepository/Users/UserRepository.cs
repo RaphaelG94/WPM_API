@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Microsoft.EntityFrameworkCore;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Projections.Users;
 using WPM_API.Data.Extensions;
 using WPM_API.Data.Infrastructure;
 using WPM_API.Data.Models;
-using Microsoft.EntityFrameworkCore;
 
-namespace  WPM_API.Data.DataRepository.Users
+namespace WPM_API.Data.DataRepository.Users
 {
     internal static class UserExtensions
     {
@@ -123,7 +120,7 @@ namespace  WPM_API.Data.DataRepository.Users
             item.CreatedByUserId = creationUserId;
             return item;
         }
-        
+
         public UserForgotPassword GetForgotPasswordRequest(Guid id)
         {
             return Context.Set<UserForgotPassword>()

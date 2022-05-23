@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace WPM_API.Common.Logs
+﻿namespace WPM_API.Common.Logs
 {
     public static class LogHolder
     {

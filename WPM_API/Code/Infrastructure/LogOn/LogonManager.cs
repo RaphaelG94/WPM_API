@@ -1,18 +1,11 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using WPM_API.Data.Infrastructure;
-using WPM_API.Code.Extensions;
-using WPM_API.Code.Infrastructure.TokenAuth;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using WPM_API.Code.Extensions;
+using WPM_API.Code.Infrastructure.TokenAuth;
+using WPM_API.Data.Infrastructure;
 
 namespace WPM_API.Code.Infrastructure.LogOn
 {
@@ -74,19 +67,28 @@ namespace WPM_API.Code.Infrastructure.LogOn
         {
             var handler = new JwtSecurityTokenHandler();
 
-            var identity = new ClaimsIdentity(loggedClaims.GetAsClaims(), JwtBearerDefaults.AuthenticationScheme);
-            var descriptor = new SecurityTokenDescriptor
-            {
-                Issuer = _tokenAuthOptions.Issuer,
-                Audience = _tokenAuthOptions.Audience,
-                SigningCredentials = _tokenAuthOptions.SigningCredentials,
-                Subject = identity,
-                Expires = expires,
-            };
+            var temp = loggedClaims.GetAsClaims();
+            var token = new JwtSecurityToken(
+                issuer: _tokenAuthOptions.Issuer,
+                audience: _tokenAuthOptions.Audience,
+                signingCredentials: _tokenAuthOptions.SigningCredentials,
+                claims: loggedClaims.GetAsClaims(),
+                expires: expires);
 
-            var securityToken = handler.CreateToken(descriptor);
 
-            return handler.WriteToken(securityToken);
+            //var identity = new ClaimsIdentity(loggedClaims.GetAsClaims(), JwtBearerDefaults.AuthenticationScheme);
+            //var descriptor = new SecurityTokenDescriptor
+            //{
+            //    Issuer = _tokenAuthOptions.Issuer,
+            //    Audience = _tokenAuthOptions.Audience,
+            //    SigningCredentials = _tokenAuthOptions.SigningCredentials,
+            //    Subject = identity,
+            //    Expires = expires
+            //};
+
+            //var securityToken = handler.CreateToken(descriptor);
+
+            return handler.WriteToken(token);
         }
 
         public bool ValidateToken(string token)
@@ -114,7 +116,8 @@ namespace WPM_API.Code.Infrastructure.LogOn
                 {
                     return false;
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return false;
             }

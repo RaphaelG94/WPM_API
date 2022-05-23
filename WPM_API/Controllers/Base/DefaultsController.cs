@@ -1,24 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using WPM_API.Common;
-using WPM_API.Models;
 using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Data.DataContext.Entities;
-using System.Reflection;
-using System.IO;
-using System.Text;
-using CsvHelper;
-using WPM_API.Code.Mappers.CSV_Mapper;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Base
 {
     [Route("customers/{customerId}/defaults")]
     public class DefaultsController : BasisController
     {
+        public DefaultsController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Retrive all Defaults.
         /// </summary>
@@ -34,7 +32,7 @@ namespace WPM_API.Controllers.Base
                 result.AddRange(Mapper.Map<List<DefaultViewModel>>(unitOfWork.Customers.Get(customerId, "Defaults").Defaults));
             }
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(result.OrderByDescending(x => x.Name).ToList(), _serializerSettings);
+            var json = JsonConvert.SerializeObject(result.OrderByDescending(x => x.Name).ToList(), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -70,7 +68,7 @@ namespace WPM_API.Controllers.Base
                 result = Mapper.Map<DefaultViewModel>(unitOfWork.Customers.Get(customerId, "Defaults").Defaults.First(x => x.Name.Equals(Default.Name)));
             }
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return StatusCode(201, json);
         }
     }

@@ -1,19 +1,22 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext;
-using WPM_API.Models.Release_Mgmt;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext;
+using WPM_API.Models.Release_Mgmt;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Releas_Mgmt
 {
     [Route("hardwareModels")]
     public class HardwareModelController : BasisController
     {
+        public HardwareModelController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Authorize(Policy = Constants.Policies.Admin)]
         public IActionResult GetHardwareModels()
@@ -26,7 +29,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
                 HardwareModelViewModel hardwareModelData = Mapper.Map<HardwareModelViewModel>(hardwareModel);
                 result.HardwareModels.Add(hardwareModelData);
             }
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -38,7 +41,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
             newModel = Mapper.Map<HardwareModel>(hardwareModel);
             UnitOfWork.HardwareModels.MarkForInsert(newModel, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
-            var json = JsonConvert.SerializeObject(Mapper.Map<HardwareModelViewModel>(newModel), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<HardwareModelViewModel>(newModel), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -58,7 +61,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
             toUpdate.Vendor = updateData.Vendor;
             UnitOfWork.HardwareModels.MarkForUpdate(toUpdate, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
-            var json = JsonConvert.SerializeObject(Mapper.Map<HardwareModelViewModel>(toUpdate), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<HardwareModelViewModel>(toUpdate), serializerSettings);
             return new OkObjectResult(json);
         }
 

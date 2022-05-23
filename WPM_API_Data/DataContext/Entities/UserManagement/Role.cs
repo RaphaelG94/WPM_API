@@ -1,9 +1,8 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class Role : IEntity
     {
@@ -19,6 +18,6 @@ namespace  WPM_API.Data.DataContext.Entities
         public string Name { get; set; }
 
         public virtual List<UserRole> UserRoles { get; set; }
-        
+
     }
 }

@@ -1,32 +1,26 @@
-﻿using WPM_API.Azure;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.DataContext.Entities.SmartDeploy;
-using WPM_API.Data.DataContext.Entities.Storages;
-using WPM_API.Data.Models;
-using WPM_API.FileRepository;
-using WPM_API.FileRepository.SmartDeploy;
-using WPM_API.TransferModels;
-using WPM_API.TransferModels.SmartDeploy;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Management.Monitor.Fluent.Models;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Net.Mail;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Xml.Linq;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.DataContext.Entities.Storages;
+using WPM_API.Data.Models;
+using WPM_API.FileRepository;
+using WPM_API.FileRepository.SmartDeploy;
+using WPM_API.Options;
+using WPM_API.TransferModels;
+using WPM_API.TransferModels.SmartDeploy;
 //using bsshared.database;
 //using bsshared;
 //using System.Data.Entity;
@@ -45,7 +39,7 @@ namespace WPM_API.Controllers
             DateTime now = DateTime.UtcNow;
             return now.ToString("dd.MM.yyyy HH:mm:ss");
         }
-        
+
         [HttpPost]
         [Route("getTimeZone/{uuid}")]
         public IActionResult GetClientTimezone([FromRoute] string uuid, [FromBody] AgentsAuthenticationModel data)
@@ -99,11 +93,11 @@ namespace WPM_API.Controllers
                 else
                 {
                     result = "W. Europe Standard Time";
-                } 
+                }
                 return Ok(result);
             }
         }
-        
+
 
         [HttpPost]
         [Route("getComputerName/{uuid}")]
@@ -128,6 +122,11 @@ namespace WPM_API.Controllers
         }
 
         public static JsonSerializer ser = new JsonSerializer();
+
+        public ConnectController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [AllowAnonymous]
         [HttpPost]
         [Route("{CompMail}")]
@@ -137,12 +136,12 @@ namespace WPM_API.Controllers
             {
                 SmtpClient client = new SmtpClient
                 {
-                    Host = _agentEmailOptions.Host,
+                    Host = agentEmailOptions.Host,
                     Port = 587,
                     EnableSsl = true,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(_agentEmailOptions.Email, _agentEmailOptions.Password),
+                    Credentials = new NetworkCredential(agentEmailOptions.Email, agentEmailOptions.Password),
 
                     TargetName = "STARTTLS/smtp.office365.com"
                 };
@@ -158,8 +157,8 @@ namespace WPM_API.Controllers
                 message.;
                 message.IsBodyHtml = true;
                 */
-                //MailAddress from = new MailAddress(_agentEmailOptions.Email, _agentEmailOptions.DisplayName);
-                MailAddress from = new MailAddress(_agentEmailOptions.Email, _agentEmailOptions.DisplayName);
+                //MailAddress from = new MailAddress(agentEmailOptions.Email, agentEmailOptions.DisplayName);
+                MailAddress from = new MailAddress(agentEmailOptions.Email, agentEmailOptions.DisplayName);
                 MailAddress to = new MailAddress(CompMail.Trim());
                 using (var message = new MailMessage(from, to)
                 {
@@ -243,7 +242,7 @@ namespace WPM_API.Controllers
                 result.CmdBtn4 = customer.CmdBtn4;
                 result.BannerLink = customer.BannerLink;
 
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
             }
         }
@@ -470,7 +469,7 @@ namespace WPM_API.Controllers
                         try
                         {
                             // Download the specific file 
-                            FileRepository.FileRepository fileRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.IconsAndBanners);
+                            FileRepository.FileRepository fileRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.IconsAndBanners);
                             var blob = fileRepo.GetBlobFile(toDownload.Guid);
                             var ms = new MemoryStream();
                             await blob.DownloadToAsync(ms);
@@ -501,14 +500,15 @@ namespace WPM_API.Controllers
         {
             try
             {
-                FileRepository.FileRepository fileRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                FileRepository.FileRepository fileRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                 var file = UnitOfWork.Files.Get(fileId);
                 var blob = fileRepo.GetBlobFile(file.Guid);
                 var ms = new MemoryStream();
                 await blob.DownloadToAsync(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, file.Name);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -541,7 +541,7 @@ namespace WPM_API.Controllers
                     {
                         return BadRequest("Error: No client list found for uuid and SerialNr");
                     }
-                    
+
                     var fittingClientes = new List<DATA.Client>();
 
                     // Find to remove clients
@@ -551,7 +551,7 @@ namespace WPM_API.Controllers
                         macAddresses = unitOfWork.MacAddresses.GetAll()
                             .Where(x => x.ClientId == client.Id).ToList();
                         if (macAddresses == null || macAddresses.Count == 0)
-                        {                            
+                        {
                             return BadRequest("Error with fetched mac addresses: " + string.Join(",", macAddresses.Select(x => x.Address).ToArray()) + " " + string.Join(",", fetchedClients.Select(x => x.Id).ToArray()));
                         }
                         for (int i = 0; i < macAddresses.Count; i++)
@@ -566,14 +566,15 @@ namespace WPM_API.Controllers
                                     }
                                 }
                             }
-                        }                       
-                    }                                        
+                        }
+                    }
 
                     // Check if a client was identified
                     if (!(fittingClientes.Count() == 0 || fittingClientes.Count() > 1))
                     {
-                        fetchedClient = fittingClientes.First();                                              
-                    } else
+                        fetchedClient = fittingClientes.First();
+                    }
+                    else
                     {
                         return BadRequest("FittingClientes: " + string.Join(",", fittingClientes.Select(x => x.Id)));
                     }
@@ -585,18 +586,19 @@ namespace WPM_API.Controllers
                         {
                             return BadRequest("ERROR: The customer of the client is null: " + fetchedClient.CustomerId);
                         }
-                        string result = JsonConvert.SerializeObject(fetchedClient.Customer, _serializerSettings);
+                        string result = JsonConvert.SerializeObject(fetchedClient.Customer, serializerSettings);
                         return Ok(result);
                     }
                     else
                     {
                         DATA.Customer dummy = new DATA.Customer();
                         dummy.Name = "Not registered yet";
-                        string result = JsonConvert.SerializeObject(dummy, _serializerSettings);
+                        string result = JsonConvert.SerializeObject(dummy, serializerSettings);
                         return Ok(result);
                     }
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 var st = new StackTrace(e, true);
                 // Get the top stack frame
@@ -663,7 +665,7 @@ namespace WPM_API.Controllers
                     {
                         return BadRequest("ERROR: The client already exists");
                     }
-                    
+
                     DATA.Client newClient = new DATA.Client() { Description = ClientAdd.Description, Name = ClientAdd.Name, UUID = ClientAdd.uuid, CustomerId = cust.Id };
                     newClient.Model = ClientAdd.Model;
                     newClient.SerialNumber = ClientAdd.SerialNumber;
@@ -726,8 +728,8 @@ namespace WPM_API.Controllers
         [HttpPost]
         [Route("autoRegisterClient")]
         public IActionResult AddClientAutomatically([FromBody] ClientAddRegisterAuto ClientAdd)
-        {                        
-            if (ClientAdd.uuid == null || ClientAdd.uuid == "" || 
+        {
+            if (ClientAdd.uuid == null || ClientAdd.uuid == "" ||
                 ClientAdd.SerialNumber == null || ClientAdd.SerialNumber == "" ||
                 ClientAdd.MacAddresses == null && ClientAdd.MacAddresses.Count() == 0)
             {
@@ -778,7 +780,7 @@ namespace WPM_API.Controllers
                     {
                         fetchedClient = fittingClientes.First();
                     }
-                    
+
                     if (fetchedClient != null && cust.AutoRegisterClients)
                     {
                         // Delete former ClientClientProperties
@@ -838,9 +840,9 @@ namespace WPM_API.Controllers
                             unitOfWork.Logs.MarkForDelete(log);
                             unitOfWork.SaveChanges();
                         }
-                        
+
                         unitOfWork.Clients.MarkForDelete(fetchedClient);
-                        unitOfWork.SaveChanges();                                                                     
+                        unitOfWork.SaveChanges();
                     }
                     fetchedClient = unitOfWork.Clients.GetAll("AssignedSoftware", "ActivityLogs").Where(x => x.UUID == ClientAdd.uuid).FirstOrDefault();
                     if (fetchedClient != null)
@@ -918,7 +920,8 @@ namespace WPM_API.Controllers
                         result.uuid = ClientAdd.uuid;
                         var json = JsonConvert.SerializeObject(result);
                         return new OkObjectResult(json);
-                    } catch (Exception exc)
+                    }
+                    catch (Exception exc)
                     {
                         return BadRequest("ERROR AFTER SAVING NEW CLIENT");
                     }
@@ -933,14 +936,15 @@ namespace WPM_API.Controllers
                         if (innerException.InnerException != null)
                         {
                             innerException = innerException.InnerException;
-                        } else
+                        }
+                        else
                         {
                             innerException = null;
                         }
-                    }                    
+                    }
                     return BadRequest(e.Message + " " + innerExceptionMessage);
                 }
-            }            
+            }
         }
 
         private List<DATA.ClientParameter> GenerateFixedClientParams(DATA.Client client)
@@ -986,24 +990,25 @@ namespace WPM_API.Controllers
             WindowsVersions windowsVersions = null;
             WindowsVersion osInformation = null;
             var assembly = typeof(Program).GetTypeInfo().Assembly;
-            using (Stream stream = assembly.GetManifestResourceStream("WPM_API.Resources.WindowsVersions.json")) 
+            using (Stream stream = assembly.GetManifestResourceStream("WPM_API.Resources.WindowsVersions.json"))
             {
                 using (StreamReader sr = new StreamReader(stream))
                 {
                     string jsonContent = sr.ReadToEnd();
-                     windowsVersions = JsonConvert.DeserializeObject<WindowsVersions>(jsonContent, _serializerSettings);
+                    windowsVersions = JsonConvert.DeserializeObject<WindowsVersions>(jsonContent, serializerSettings);
                 }
             }
 
             if (windowsVersions == null)
             {
                 return BadRequest("ERROR: Could not load Windows Versions comparison table");
-            }            
+            }
 
             if (data.ClientOrServer == "Client")
             {
                 osInformation = windowsVersions.VersionsClient.Find(x => x.BuildNr == data.BuildNr);
-            } else
+            }
+            else
             {
                 osInformation = windowsVersions.VersionsServer.Find(x => x.BuildNr == data.BuildNr);
                 isServer = true;
@@ -1018,7 +1023,8 @@ namespace WPM_API.Controllers
             if (serviceOrClient == "service")
             {
                 runningContext = "Run in service";
-            } else
+            }
+            else
             {
                 runningContext = "Run in user context";
             }
@@ -1065,7 +1071,7 @@ namespace WPM_API.Controllers
                     {
                         return BadRequest("ERROR: The client could not be found");
                     }
-                   
+
                     var tasks = unitOfWork.ClientTasks.GetAll("Task", "Task.Files", "Task.ExecutionFile")
                         .Where(x => x.ClientId == fetchedClient.Id && x.Status != "executed" && x.Type == "software" && x.Task.RunningContext == runningContext).ToList();
                     foreach (DATA.ClientTask t in tasks)
@@ -1080,7 +1086,7 @@ namespace WPM_API.Controllers
                             }
                         }
                     }
-                    string json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    string json = JsonConvert.SerializeObject(result, serializerSettings);
                     return new OkObjectResult(json);
                 }
                 catch (Exception ex)
@@ -1099,7 +1105,7 @@ namespace WPM_API.Controllers
         [HttpPost]
         [Route("validateOS")]
         [AllowAnonymous]
-        public IActionResult ValidateOS ([FromBody] AgentsAuthenticationSWApplicabilityModel data)
+        public IActionResult ValidateOS([FromBody] AgentsAuthenticationSWApplicabilityModel data)
         {
             WindowsVersions windowsVersions = null;
             WindowsVersion osInformation = null;
@@ -1109,7 +1115,7 @@ namespace WPM_API.Controllers
                 using (StreamReader sr = new StreamReader(stream))
                 {
                     string jsonContent = sr.ReadToEnd();
-                    windowsVersions = JsonConvert.DeserializeObject<WindowsVersions>(jsonContent, _serializerSettings);
+                    windowsVersions = JsonConvert.DeserializeObject<WindowsVersions>(jsonContent, serializerSettings);
                 }
             }
 
@@ -1130,13 +1136,14 @@ namespace WPM_API.Controllers
             if (osInformation == null)
             {
                 return BadRequest();
-            } else
+            }
+            else
             {
                 return Ok("OS is valid");
             }
         }
-        
-        private bool CheckApplicability (WindowsVersion osInformation, CustomerSoftware cs, RuleViewModel applicabilityRule, bool is64Bit, bool isServer)
+
+        private bool CheckApplicability(WindowsVersion osInformation, CustomerSoftware cs, RuleViewModel applicabilityRule, bool is64Bit, bool isServer)
         {
             if (is64Bit)
             {
@@ -1144,7 +1151,8 @@ namespace WPM_API.Controllers
                 {
                     return false;
                 }
-            } else
+            }
+            else
             {
                 if (!applicabilityRule.Architecture.Contains("32bit"))
                 {
@@ -1162,14 +1170,15 @@ namespace WPM_API.Controllers
             {
                 if (osInformation.Name == "Win 10")
                 {
-                    if (!cs.AllWin10Versions) 
+                    if (!cs.AllWin10Versions)
                     {
                         if (!applicabilityRule.Win10Versions.Contains(osInformation.ReleaseId))
                         {
                             return false;
                         }
                     }
-                } else if (osInformation.Name == "Win 11")
+                }
+                else if (osInformation.Name == "Win 11")
                 {
                     if (!cs.AllWin11Versions)
                     {
@@ -1179,11 +1188,12 @@ namespace WPM_API.Controllers
                         }
                     }
                 }
-            } else
+            }
+            else
             {
                 return false;
             }
-            return true;          
+            return true;
         }
 
         [HttpPost]
@@ -1195,13 +1205,15 @@ namespace WPM_API.Controllers
             if (serviceOrClient == "service")
             {
                 runningContext = "Run in service";
-            } else
+            }
+            else
             {
                 runningContext = "Run in user context";
             }
             using (var unitOfWork = CreateUnitOfWork())
             {
-                try {
+                try
+                {
                     DATA.Client fetchedClient = null;
                     var fetchedClients = unitOfWork.Clients.GetAll(ClientIncludes.GetAllIncludes()).Where(x => x.UUID == uuid && x.SerialNumber == data.SerialNumber).ToList();
                     var fittingClientes = new List<DATA.Client>();
@@ -1247,7 +1259,7 @@ namespace WPM_API.Controllers
                             result.Add(ConvertToClientTask(t));
                         }
                     }
-                    string json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    string json = JsonConvert.SerializeObject(result, serializerSettings);
                     return new OkObjectResult(json);
                 }
                 catch (Exception e)
@@ -1332,14 +1344,14 @@ namespace WPM_API.Controllers
             WindowsVersions windowsVersions = null;
             WindowsVersion osInformation = null;
             try
-            {                
+            {
                 var assembly = typeof(Program).GetTypeInfo().Assembly;
                 using (Stream stream = assembly.GetManifestResourceStream("WPM_API.Resources.WindowsVersions.json"))
                 {
                     using (StreamReader sr = new StreamReader(stream))
                     {
                         string jsonContent = sr.ReadToEnd();
-                        windowsVersions = JsonConvert.DeserializeObject<WindowsVersions>(jsonContent, _serializerSettings);
+                        windowsVersions = JsonConvert.DeserializeObject<WindowsVersions>(jsonContent, serializerSettings);
                     }
                 }
 
@@ -1362,7 +1374,8 @@ namespace WPM_API.Controllers
                 {
                     return BadRequest("ERROR: Could not load the clients OS information");
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 var st = new StackTrace(e, true);
                 // Get the top stack frame
@@ -1381,7 +1394,8 @@ namespace WPM_API.Controllers
             if (clientOrService == "service")
             {
                 runningContext = "Run in service";
-            } else if (clientOrService == "app")
+            }
+            else if (clientOrService == "app")
             {
                 runningContext = "Run in user context";
             }
@@ -1429,7 +1443,7 @@ namespace WPM_API.Controllers
                     foreach (WPM_API.Data.DataContext.Entities.CustomerSoftwareStream stream in customerSoftwareStreams)
                     {
                         foreach (WPM_API.Data.DataContext.Entities.CustomerSoftware software in stream.StreamMembers)
-                        {                        
+                        {
                             if (software.Type == "Software" && software.CustomerStatus != "Outdated")
                             {
                                 var temp = unitOfWork.CustomerSoftwares.Get(software.Id,
@@ -1453,26 +1467,27 @@ namespace WPM_API.Controllers
                                     "RuleApplicability.OsVersionNames",
                                     "RuleApplicability.Win10Versions",
                                     "RuleApplicability.Win11Versions"
-                                    );                                
-                                if (CheckApplicability(osInformation, temp, Mapper.Map<RuleViewModel>(temp.RuleApplicability), data.Is64Bit, isServer)) {
+                                    );
+                                if (CheckApplicability(osInformation, temp, Mapper.Map<RuleViewModel>(temp.RuleApplicability), data.Is64Bit, isServer))
+                                {
                                     customerSoftwares.Add(temp);
-                                }                                
+                                }
                             }
                         }
-                    }   
-                    
+                    }
+
                     string customerId = fetchedClient.CustomerId;
                     string syshouseId = fetchedClient.Customer.SystemhouseId;
-                    
+
                     List<SoftwareClientViewModel> result = new List<SoftwareClientViewModel>();
                     foreach (CustomerSoftware cs in customerSoftwares)
-                    {                        
+                    {
                         DATA.Software origin = unitOfWork.Software.Get(cs.SoftwareId);
                         var temp = Mapper.Map<SoftwareClientViewModel>(cs);
                         temp.AllWin10Versions = origin.AllWin10Versions;
-                        result.Add(temp);                        
+                        result.Add(temp);
                     }
-                    
+
                     foreach (SoftwareClientViewModel s in result)
                     {
                         if (s.Required == null)
@@ -1484,17 +1499,19 @@ namespace WPM_API.Controllers
                     {
                         List<DATA.ClientSoftware> clientSoftware = fetchedClient.AssignedSoftware;
                         // Check required value for ClientSoftware entries
-                        if (clientSoftware != null) {
+                        if (clientSoftware != null)
+                        {
                             foreach (DATA.ClientSoftware cs in clientSoftware)
                             {
                                 var tempSoftware = result.Find(x => x.Id == cs.CustomerSoftware.Id);
-                                if (tempSoftware != null) {
+                                if (tempSoftware != null)
+                                {
                                     tempSoftware.Required = cs.Install;
                                 }
                             }
                         }
                     }
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return new OkObjectResult(json);
                 }
                 catch (Exception ex)
@@ -1593,11 +1610,11 @@ namespace WPM_API.Controllers
                         }
                     }
                 }
-                
+
                 List<SoftwareClientViewModel> result = new List<SoftwareClientViewModel>();
                 result = Mapper.Map<List<SoftwareClientViewModel>>(customerSoftwares);
-                
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return new OkObjectResult(json);
             }
         }
@@ -1611,7 +1628,7 @@ namespace WPM_API.Controllers
             {
                 string _sn = Request.Form["_serialnumber"];
                 var software = UnitOfWork.Software.GetAll(Data.Models.ServerIncludes.GetTaskAndRuleIncludes());
-                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(software), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(software), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception ex)
@@ -1629,7 +1646,7 @@ namespace WPM_API.Controllers
             {
                 string _rule_id = Request.Form["_rule_id"];
                 var rule = UnitOfWork.Rules.Get(_rule_id, "Type", "Data");
-                var json = JsonConvert.SerializeObject(Mapper.Map<RuleViewModel>(rule), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<RuleViewModel>(rule), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception ex)
@@ -1648,7 +1665,7 @@ namespace WPM_API.Controllers
                 string _sn = Request.Form["_serialnumber"];
                 string _tuid = Request.Form["_task_uid"];
                 var task = UnitOfWork.Clients.Get(_sn, "Tasks", "Tasks.Task").Tasks.Find(x => x.TaskId.Equals(_tuid)).Task;
-                var json = JsonConvert.SerializeObject(Mapper.Map<TaskViewModel>(task), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<TaskViewModel>(task), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception ex)
@@ -1717,7 +1734,7 @@ namespace WPM_API.Controllers
                     if (csdp.Managed)
                     {
                         // TODO: chceck system; fix for livesystem
-                        azure = new Azure.AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azure = new Azure.AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -1766,7 +1783,7 @@ namespace WPM_API.Controllers
             string _fp = Request.Form["_filename"]; ;
             try
             {
-                SmartDeployRepository storage = new SmartDeployRepository(_connectionStrings.FileRepository, _appSettings.SmartDeploySources);
+                SmartDeployRepository storage = new SmartDeployRepository(connectionStrings.FileRepository, appSettings.SmartDeploySources);
                 var cf = storage.DownloadFile(_fn, _fp);
                 var ms = new System.IO.MemoryStream();
                 await cf.DownloadToAsync(ms);
@@ -1789,7 +1806,7 @@ namespace WPM_API.Controllers
                 string _fp = "sw_icons";
                 string _sw_id = Request.Form["_sw_id"];
                 string _fn = _sw_id + ".ico";
-                SmartDeployRepository storage = new SmartDeployRepository(_connectionStrings.FileRepository, _appSettings.SmartDeploySources);
+                SmartDeployRepository storage = new SmartDeployRepository(connectionStrings.FileRepository, appSettings.SmartDeploySources);
                 var cf = storage.DownloadFile(_fp, _fn);
                 var ms = new MemoryStream();
                 cf.DownloadToAsync(ms);
@@ -1811,15 +1828,15 @@ namespace WPM_API.Controllers
             {
                 string _tuid = Request.Form["_task_uid"];
                 var fileList = UnitOfWork.Tasks.Get(_tuid, "Files").Files;
-                var json = JsonConvert.SerializeObject(Mapper.Map<List<FileRefViewModel>>(fileList), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<FileRefViewModel>>(fileList), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception ex)
             {
                 return new BadRequestObjectResult("Exception: " + ex.Message);
             }
-        }       
-      
+        }
+
         [AllowAnonymous]
         [HttpPost]
         [Route("setTaskStatus")]
@@ -1906,7 +1923,7 @@ namespace WPM_API.Controllers
         [HttpPost]
         [Route("installSoftware/{uuid}/{swId}/{type}")]
         public IActionResult InstallSoftware(
-            [FromRoute] string uuid, 
+            [FromRoute] string uuid,
             [FromRoute] string swId,
             [FromRoute] string type,
             [FromBody] AgentsAuthenticationModel data)
@@ -1966,16 +1983,17 @@ namespace WPM_API.Controllers
                             return new NotFoundObjectResult("No task for install found.");
                         }
                         return new OkObjectResult("true");
-                    } else
+                    }
+                    else
                     {
                         return new BadRequestObjectResult("ERROR: The client was not found");
-                    }                    
+                    }
                 }
                 catch (Exception ex)
                 {
                     return new BadRequestObjectResult("Exception: " + ex.Message);
                 }
-            }            
+            }
         }
 
         [AllowAnonymous]
@@ -2036,13 +2054,14 @@ namespace WPM_API.Controllers
         {
             try
             {
-                ResourcesRepository resources = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+                ResourcesRepository resources = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
                 var ms = new MemoryStream();
                 var blob = resources.GetBlobFile("SmartDeployPackageInstaller.msi");
                 await blob.DownloadToAsync(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, "SmartDeployPackageInstaller.msi");
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -2052,7 +2071,7 @@ namespace WPM_API.Controllers
         [Route("download/3.5")]
         public async Task<IActionResult> DownloadWin7AgentAsync()
         {
-            ResourcesRepository resources = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository resources = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             var ms = new MemoryStream();
             var blob = resources.GetBlobFile("SmartDeployWin7.exe");
             await blob.DownloadToAsync(ms);
@@ -2065,7 +2084,7 @@ namespace WPM_API.Controllers
         [Route("download/SmartDeployEXE")]
         public async Task<IActionResult> DownloadSmartDeployExeAsync()
         {
-            ResourcesRepository resources = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository resources = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             var ms = new MemoryStream();
             var blob = resources.GetBlobFile("SmartDeploy.exe");
             await blob.DownloadToAsync(ms);
@@ -2082,7 +2101,8 @@ namespace WPM_API.Controllers
             {
                 // Load client & inventory of client
                 DATA.Client client = unitOfWork.Clients.GetAll().Where(x => x.UUID == uuid).First();
-                if (client != null) {
+                if (client != null)
+                {
                     // Delete existing inventory
                     List<Inventory> dbEntries = unitOfWork.Inventories.GetAll()
                         .Where(x => x.ClientId == client.Id).ToList();
@@ -2114,7 +2134,8 @@ namespace WPM_API.Controllers
                         unitOfWork.SaveChanges();
                         return Ok();
                     }
-                } else
+                }
+                else
                 {
                     return BadRequest("ERROR: The client does not exist");
                 }
@@ -2175,7 +2196,8 @@ namespace WPM_API.Controllers
                     }
                     return Ok();
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -2263,10 +2285,11 @@ namespace WPM_API.Controllers
         [Route("unattend/{uuid}")]
         public async Task<IActionResult> GetUnattendFile([FromRoute] string uuid, [FromBody] AgentsAuthenticationModel data)
         {
-            try {
+            try
+            {
                 using (var unitOfWork = CreateUnitOfWork())
                 {
-                    DATA.Client fetchedClient = null;                    
+                    DATA.Client fetchedClient = null;
                     List<DATA.Client> fetchedClients = unitOfWork.Clients.GetAll("Customer").Where(x => x.UUID == uuid && x.SerialNumber == data.SerialNumber).ToList();
 
                     List<DATA.Client> fittingClients = new List<DATA.Client>();
@@ -2309,7 +2332,7 @@ namespace WPM_API.Controllers
                     {
                         return BadRequest("ERROR: The local admin password and/or username");
                     }
-                    DATA.Customer customer;                    
+                    DATA.Customer customer;
 
                     CustomerImage image = unitOfWork.CustomerImages.Get(fetchedClient.OSSettingsImageId, "Unattend");
                     CustomerImageStream imageStream = unitOfWork.CustomerImageStreams.Get(image.CustomerImageStreamId);
@@ -2354,7 +2377,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check for system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
 
@@ -2390,14 +2413,15 @@ namespace WPM_API.Controllers
                     if (registeredOrganizationTag != null && registeredOrganization != null)
                     {
                         registeredOrganizationTag.Value = registeredOrganization.Value;
-                    }                    
+                    }
 
                     // Remove node if product key not in stream                     
                     if (imageStream.ProductKey == null || !(imageStream.ProductKey.Length == 29 && imageStream.ProductKey.Split('-').Length == 5))
                     {
                         var productKey = unattend.Descendants()?.Elements(xmlNameSpace + "ProductKey").FirstOrDefault();
                         productKey.Remove();
-                    } else
+                    }
+                    else
                     {
                         var productKey = unattend.Descendants()?.Elements(xmlNameSpace + "ProductKey").FirstOrDefault();
                         productKey.Value = imageStream.ProductKey;
@@ -2408,13 +2432,13 @@ namespace WPM_API.Controllers
                     {
                         timeZone.Value = fetchedClient.TimeZoneWindows;
                     }
-                   
+
                     var keyboarLayout = unattend.Descendants()?.Elements(xmlNameSpace + "InputLocale").FirstOrDefault();
                     if (keyboarLayout != null)
                     {
                         keyboarLayout.Value = fetchedClient.KeyboardLayoutWindows;
                     }
-                    
+
                     var clientName = unattend.Descendants()?.Elements(xmlNameSpace + "ComputerName").FirstOrDefault();
                     if (clientName != null)
                     {
@@ -2446,7 +2470,7 @@ namespace WPM_API.Controllers
                                 temp.Value = DecryptString(fetchedClient.LocalAdminUsername);
                             }
                         }
-                    }                    
+                    }
 
                     var autoLogon = unattend.Descendants()?.Elements(xmlNameSpace + "AutoLogon").FirstOrDefault();
                     if (autoLogon != null)
@@ -2472,11 +2496,12 @@ namespace WPM_API.Controllers
                                 }
                             }
                         }
-                    }                    
+                    }
                     // Return unattend file for download
                     return Ok(unattend.ToString());
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 var st = new StackTrace(e, true);
                 // Get the top stack frame
@@ -2488,7 +2513,7 @@ namespace WPM_API.Controllers
         }
 
         private string Base64Encode(string plainText)
-        {           
+        {
             var plainTextBytes = System.Text.Encoding.Unicode.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
         }
@@ -2556,7 +2581,7 @@ namespace WPM_API.Controllers
                 CustomerImageStream stream = unitOfWork.CustomerImageStreams.Get(image.CustomerImageStreamId);
 
                 // Azure connection & get standard file
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient bitstreamClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = bitstreamClient.GetContainerReference("bsdp-v202011");
                 CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("Image_Repository/Configuration_Files/test_unattend.seed");
@@ -2575,7 +2600,8 @@ namespace WPM_API.Controllers
                 if (fetchedClient.LanguagePackLinux != null)
                 {
                     content = content.Replace("@@local", fetchedClient.LanguagePackLinux);
-                } else
+                }
+                else
                 {
                     content = content.Replace("@@local", "en-US.UTF-8");
                 }
@@ -2601,7 +2627,7 @@ namespace WPM_API.Controllers
                 else
                 {
                     // TODO: Check system; fix for live system
-                    azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                    azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                 }
                 string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                 CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -2692,7 +2718,7 @@ namespace WPM_API.Controllers
                 }
 
                 // Get default grub.cfg and replace value
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient bitstreamClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = bitstreamClient.GetContainerReference("bsdp-v202011");
                 CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("Image_Repository/Configuration_Files/grub.cfg");
@@ -2741,7 +2767,7 @@ namespace WPM_API.Controllers
                 else
                 {
                     // TODO: Check for system; fix for live system
-                    azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                    azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                 }
                 string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                 CloudStorageAccount customerStorageAccount = CloudStorageAccount.Parse(connectionString);
@@ -2755,13 +2781,13 @@ namespace WPM_API.Controllers
                     Permissions = SharedAccessBlobPermissions.Read | SharedAccessBlobPermissions.List
                 });
                 return Ok(sasKey);
-            }               
+            }
         }
 
         [HttpGet]
         [AllowAnonymous]
         [Route("getOfficeConfig/{uuid}")]
-        public IActionResult GetOfficeConfig ([FromRoute] string uuid)
+        public IActionResult GetOfficeConfig([FromRoute] string uuid)
         {
             DATA.Client client = UnitOfWork.Clients.GetAll().Where(x => x.UUID == uuid).FirstOrDefault();
             if (client == null)
@@ -2860,7 +2886,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -2917,7 +2943,7 @@ namespace WPM_API.Controllers
         {
             try
             {
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient bitstreamClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = bitstreamClient.GetContainerReference("download-repository");
                 CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("BitStream/SD-emergency-settings.json");
@@ -2941,7 +2967,7 @@ namespace WPM_API.Controllers
         {
             try
             {
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient bitstreamClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = bitstreamClient.GetContainerReference("download-repository");
                 CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("BitStream/SD-emergency-settings.json");
@@ -2968,7 +2994,7 @@ namespace WPM_API.Controllers
         {
             try
             {
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient bitstreamClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = bitstreamClient.GetContainerReference("download-repository");
                 CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("BitStream/SD-emergency-settings.json");
@@ -2983,7 +3009,7 @@ namespace WPM_API.Controllers
                 var ms = new MemoryStream();
                 await msiCriptBlob.DownloadToStreamAsync(ms);
                 ms.Seek(0, SeekOrigin.Begin);
-                return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, "SmartDeployPackageInstaller.msi");                
+                return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, "SmartDeployPackageInstaller.msi");
             }
             catch (Exception e)
             {
@@ -3009,6 +3035,6 @@ namespace WPM_API.Controllers
             public string Name { get; set; }
             public string BuildNr { get; set; }
             public string ReleaseId { get; set; }
-        }        
+        }
     }
 }

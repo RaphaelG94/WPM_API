@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using WPM_API.Common;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Extern
 {
     [Route("api")]
     public class CertificationController : BasisController
     {
+        public CertificationController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Route("inventar")]
         [Authorize(Policy = Constants.Roles.Customer)]
@@ -22,7 +24,8 @@ namespace WPM_API.Controllers.Extern
             InventarViewModel inventar = new InventarViewModel();
             inventar.Clients = new List<InvClientViewModel>();
             inventar.Server = new List<ServerViewModel>();
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 100; i++)
+            {
                 Random gen = new Random();
                 int prob = gen.Next(100);
                 bool loc = prob <= 20;
@@ -48,7 +51,7 @@ namespace WPM_API.Controllers.Extern
                 });
             }
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(inventar, _serializerSettings);
+            var json = JsonConvert.SerializeObject(inventar, serializerSettings);
             return new OkObjectResult(json);
         }
     }

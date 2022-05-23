@@ -1,14 +1,12 @@
-﻿using WPM_API.Data.DataContext.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Entities.AssetMgmt;
 using WPM_API.Data.DataContext.Entities.SmartDeploy;
 using WPM_API.Data.DataContext.Entities.Storages;
 using WPM_API.Data.Extensions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Simple.OData.Client;
-using Microsoft.Extensions.Configuration;
 
-namespace  WPM_API.Data.DataContext
+namespace WPM_API.Data.DataContext
 {
     public class DBData : DbContext
     {
@@ -27,14 +25,18 @@ namespace  WPM_API.Data.DataContext
         //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {            
+        {
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
-            {                
+            {
                 entity.SetTableName(entity.DisplayName());
             }
             modelBuilder.AddEntityConfigurationsFromAssembly(GetType().Assembly);
-
             base.OnModelCreating(modelBuilder);
+
+            foreach (var foreignKey in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
+            {
+                foreignKey.DeleteBehavior = DeleteBehavior.Restrict;
+            }
         }
 
         public virtual DbSet<ImageStream> ImageStreams { get; set; }

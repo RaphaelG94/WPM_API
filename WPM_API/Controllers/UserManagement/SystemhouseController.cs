@@ -1,27 +1,29 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using WPM_API.Models;
-using Newtonsoft.Json;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Common;
-using System.Reflection;
-using System.IO;
-using System.Text;
 using CsvHelper;
-using WPM_API.Code.Mappers.CSV_Mapper;
-using Newtonsoft.Json.Linq;
-using WPM_API.Data.Models;
 using CsvHelper.Configuration;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Globalization;
+using System.Reflection;
+using System.Text;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Code.Mappers.CSV_Mapper;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.Models;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     [Route("systemhouses")]
     public class SystemhouseController : BasisController
     {
+        public SystemhouseController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Retrieve all systemhouses.
         /// </summary>
@@ -35,7 +37,7 @@ namespace WPM_API.Controllers
             var cust = UnitOfWork.Systemhouses.GetAll().ToList();
             result = Mapper.Map<List<Systemhouse>, List<SystemhouseViewModel>>(cust);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -65,7 +67,7 @@ namespace WPM_API.Controllers
             }
 
             // Systemhouse was created and is returned.
-            var json = JsonConvert.SerializeObject(Mapper.Map<Systemhouse, SystemhouseViewModel>(systemhouse), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Systemhouse, SystemhouseViewModel>(systemhouse), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -101,7 +103,7 @@ namespace WPM_API.Controllers
             }
 
             // Systemhouse was changed and is returned.
-            var json = JsonConvert.SerializeObject(Mapper.Map<Systemhouse, SystemhouseViewModel>(systemhouse), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Systemhouse, SystemhouseViewModel>(systemhouse), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -116,25 +118,25 @@ namespace WPM_API.Controllers
         public IActionResult DeleteSystemhouse([FromRoute] string systemhouseId)
         {
             Systemhouse systemhouse;
-                systemhouse = UnitOfWork.Systemhouses.Get(systemhouseId);
-                if (systemhouse == null)
+            systemhouse = UnitOfWork.Systemhouses.Get(systemhouseId);
+            if (systemhouse == null)
+            {
+                return NotFound("Systemhouse not found.");
+            }
+            else
+            {
+                UnitOfWork.Systemhouses.MarkForDelete(systemhouse, GetCurrentUser().Id);
+                try
                 {
-                    return NotFound("Systemhouse not found.");
+                    UnitOfWork.SaveChanges();
                 }
-                else
+                catch (Exception)
                 {
-                    UnitOfWork.Systemhouses.MarkForDelete(systemhouse, GetCurrentUser().Id);
-                    try
-                    {
-                        UnitOfWork.SaveChanges();
-                    }
-                    catch (Exception)
-                    {
-                        return BadRequest("Systemhouse could not be deleted.");
-                    }
+                    return BadRequest("Systemhouse could not be deleted.");
                 }
+            }
 
-                // Systemhouse was deleted.
+            // Systemhouse was deleted.
             return NoContent();
         }
 
@@ -164,10 +166,10 @@ namespace WPM_API.Controllers
                     return NotFound("Systemhouse not found.");
                 }
                 customer.SystemhouseId = systemhouseId;
-                
+
                 customer.CreatedByUserId = GetCurrentUser().Id;
                 customer.CreatedDate = DateTime.Now;
-                
+
                 customer.Parameters = new List<Parameter>();
                 var FixedParams = GenerateFixedCustomerParams(customer);
                 foreach (var param in FixedParams)
@@ -183,7 +185,7 @@ namespace WPM_API.Controllers
                     return BadRequest("Customer could not be created. " + exc.Message);
                 }
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<WPM_API.Data.DataContext.Entities.Customer, CustomerViewModel>(customer), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<WPM_API.Data.DataContext.Entities.Customer, CustomerViewModel>(customer), serializerSettings);
                 return new OkObjectResult(json);
             }
         }
@@ -200,7 +202,7 @@ namespace WPM_API.Controllers
                 {
                     result.AddRange(unitOfWork.Customers.GetAll().Where(x => x.SystemhouseId == id).ToList());
                 }
-                var json = JsonConvert.SerializeObject(Mapper.Map<List<CustomerViewModel>>(result), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<CustomerViewModel>>(result), serializerSettings);
                 return Ok(json);
             }
         }
@@ -212,7 +214,7 @@ namespace WPM_API.Controllers
         {
             Systemhouse sysHouse = UnitOfWork.Systemhouses.Get(GetCurrentUser().SystemhouseId);
             SystemhouseViewModel result = Mapper.Map<SystemhouseViewModel>(sysHouse);
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -220,16 +222,16 @@ namespace WPM_API.Controllers
         {
             var FixedParams = new HashSet<Parameter>();
             // FixedParams.Add(new Parameter{ Key = "$AzureBlobRoot", Value = customer.CsdpRoot, IsEditable = true});
-            FixedParams.Add(new Parameter{ Key = "$LtSASread", Value = null, IsEditable = false });
+            FixedParams.Add(new Parameter { Key = "$LtSASread", Value = null, IsEditable = false });
             FixedParams.Add(new Parameter { Key = "$LtSASwrite", Value = null, IsEditable = false });
             FixedParams.Add(new Parameter { Key = "$CustomerName", Value = customer.Name, IsEditable = false });
-           //  FixedParams.Add(new Parameter{ Key = "$CSDPcontainer", Value = customer.CsdpContainer, IsEditable = true });
+            //  FixedParams.Add(new Parameter{ Key = "$CSDPcontainer", Value = customer.CsdpContainer, IsEditable = true });
 
             return FixedParams;
         }
 
 
-        private CreateCustomerResultViewModel CreateCustomerResult (WPM_API.Data.DataContext.Entities.Customer customer, string companyId)
+        private CreateCustomerResultViewModel CreateCustomerResult(WPM_API.Data.DataContext.Entities.Customer customer, string companyId)
         {
             CreateCustomerResultViewModel result = new CreateCustomerResultViewModel();
             // Customer data
@@ -261,7 +263,7 @@ namespace WPM_API.Controllers
                     IgnoreBlankLines = true,
                     HasHeaderRecord = false,
                     MissingFieldFound = null,
-                    
+
                 };
                 var csv = new CsvReader(reader, csvConfig);
                 csv.Context.RegisterClassMap<DefaultMap>();

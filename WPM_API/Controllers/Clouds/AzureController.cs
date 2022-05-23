@@ -1,18 +1,13 @@
-using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authorization;
-using WPM_API.Models;
-using WPM_API.Common.Utils;
-using WPM_API.Common.Logs;
 using Microsoft.AspNetCore.Mvc;
-using WPM_API.Data.DataContext.Entities;
+using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
-using System;
-using System.Linq;
+using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.Models;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
-using System.IO;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
@@ -21,12 +16,17 @@ namespace WPM_API.Controllers
     {
         private static readonly string key = "N43Kn90tbubxJZeLCIZIIjxagKyq4ik0";
 
+        public AzureController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPut]
         [Authorize(Policy = Constants.Policies.Customer)]
         [Route("{customerId}")]
         public IActionResult UpdateAzureCredentials([FromRoute] string customerId, [FromBody] AzureCredentialViewModel updateData)
         {
-            using (var unitOfWork = CreateUnitOfWork()) {
+            using (var unitOfWork = CreateUnitOfWork())
+            {
                 Customer customer = UnitOfWork.Customers.GetOrNull(customerId, CustomerIncludes.Parameters, "CloudEntryPoints");
                 if (customer == null)
                 {
@@ -41,7 +41,8 @@ namespace WPM_API.Controllers
 
                 // Encrypt credentials
                 toUpdate.ClientId = EncryptString(updateData.ClientId);
-                if (updateData.ClientSecret != "" && updateData.ClientSecret != null) {
+                if (updateData.ClientSecret != "" && updateData.ClientSecret != null)
+                {
                     toUpdate.ClientSecret = EncryptString(updateData.ClientSecret);
                 }
                 toUpdate.TenantId = EncryptString(updateData.TenantId);
@@ -59,7 +60,7 @@ namespace WPM_API.Controllers
                 toUpdate.ClientSecret = DecryptString(toUpdate.ClientSecret);
                 toUpdate.TenantId = DecryptString(toUpdate.TenantId);
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<AzureCredsNoSecret>(toUpdate), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<AzureCredsNoSecret>(toUpdate), serializerSettings);
                 return new OkObjectResult(json);
             }
         }
@@ -99,17 +100,17 @@ namespace WPM_API.Controllers
                 customer.CloudEntryPoints.Add(newCEP);
                 GenerateOrUpdateAzureParameters(customer, azureEntryData);
                 UnitOfWork.SaveChanges();
-                
+
                 // Decrypt values for UI
                 List<AzureCredsNoSecret> result = Mapper.Map<List<AzureCredsNoSecret>>(customer.CloudEntryPoints);
-                foreach(AzureCredsNoSecret avm in result)
+                foreach (AzureCredsNoSecret avm in result)
                 {
                     avm.TenantId = DecryptString(avm.TenantId);
                     // avm.ClientSecret = DecryptString(avm.ClientSecret);
                     avm.ClientId = DecryptString(avm.ClientId);
                 }
-                
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
 
                 return new OkObjectResult(json);
             }
@@ -130,9 +131,9 @@ namespace WPM_API.Controllers
             }
             else
             {
-                customer.Parameters.Add(new Parameter {Key = "$tenantId", Value = azureEntryData.TenantId});
-                customer.Parameters.Add(new Parameter {Key = "$clientId", Value = azureEntryData.ClientId});
-                customer.Parameters.Add(new Parameter {Key = "$clientSecret", Value = azureEntryData.ClientSecret});
+                customer.Parameters.Add(new Parameter { Key = "$tenantId", Value = azureEntryData.TenantId });
+                customer.Parameters.Add(new Parameter { Key = "$clientId", Value = azureEntryData.ClientId });
+                customer.Parameters.Add(new Parameter { Key = "$clientSecret", Value = azureEntryData.ClientSecret });
             }
         }
 
@@ -157,7 +158,7 @@ namespace WPM_API.Controllers
 
             List<AzureCredsNoSecret> result = Mapper.Map<List<AzureCredsNoSecret>>(customer.CloudEntryPoints);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return new OkObjectResult(json);
         }
@@ -167,7 +168,8 @@ namespace WPM_API.Controllers
         [Authorize(Policy = Constants.Policies.Customer)]
         public IActionResult DeleteCEP([FromRoute] string customerId, [FromRoute] string cepId)
         {
-            using (var unitOfWork = CreateUnitOfWork()) {
+            using (var unitOfWork = CreateUnitOfWork())
+            {
                 Customer customer = unitOfWork.Customers.GetOrNull(customerId, "CloudEntryPoints");
                 if (customer == null)
                 {
@@ -184,9 +186,9 @@ namespace WPM_API.Controllers
                 unitOfWork.CloudEntryPoints.MarkForDelete(toDelete, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<AzureCredsNoSecret>(toDelete), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<AzureCredsNoSecret>(toDelete), serializerSettings);
                 return new OkObjectResult(json);
-            } 
-        }                
+            }
+        }
     }
 }

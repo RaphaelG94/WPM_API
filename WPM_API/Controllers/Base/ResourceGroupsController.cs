@@ -1,14 +1,13 @@
-using WPM_API.Azure;
-using WPM_API.Azure.Core;
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 using AZURE = Microsoft.Azure.Management.ResourceManager.Models;
 
 namespace WPM_API.Controllers.Base
@@ -16,6 +15,10 @@ namespace WPM_API.Controllers.Base
     [Route("resource-groups")]
     public class ResourceGroupsController : BasisController
     {
+        public ResourceGroupsController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Authorize(Policy = Constants.Policies.Customer)]
         [Route("{customerId}")]
@@ -24,7 +27,7 @@ namespace WPM_API.Controllers.Base
             List<ResourceGroup> resourceGroups = UnitOfWork.ResourceGroups.GetAll().Where(x => x.CustomerId == customerId).ToList();
 
             // Serialize & return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<ResourceGroup>, List<ResourceGroupViewModel>>(resourceGroups), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<ResourceGroup>, List<ResourceGroupViewModel>>(resourceGroups), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -37,7 +40,7 @@ namespace WPM_API.Controllers.Base
             AZURE.Subscription subscription = await azure.SubscriptionService().GetSubscription(data.SubscriptionId);
             if (subscription == null)
             {
-                 return BadRequest("The subscription does not exist");
+                return BadRequest("The subscription does not exist");
             }
             if (CheckResourceGroupExists(data))
             {
@@ -64,7 +67,7 @@ namespace WPM_API.Controllers.Base
                     return BadRequest("The resource group could not be created! " + e.Message);
                 }
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<ResourceGroup, ResourceGroupViewModel>(newRG), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<ResourceGroup, ResourceGroupViewModel>(newRG), serializerSettings);
                 return new OkObjectResult(json);
             }
         }
@@ -83,7 +86,8 @@ namespace WPM_API.Controllers.Base
             if (result)
             {
                 return BadRequest("The resource group name is already taken!");
-            } else
+            }
+            else
             {
                 return new OkResult();
             }
@@ -100,14 +104,15 @@ namespace WPM_API.Controllers.Base
             else
             {
                 // TODO: check system
-                azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
             }
 
             bool result = azure.ResourceGroupService().GetRessourceGroupByName(data.Name, data.SubscriptionId);
             if (result)
             {
                 return true;
-            } else
+            }
+            else
             {
                 return false;
             }

@@ -1,21 +1,24 @@
-﻿using WPM_API.Common;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Linq.Dynamic.Core;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Data.DataContext;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Dynamic.Core;
-using System.Threading.Tasks;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.AssetMgmt
 {
     [Route("asset-classes")]
     public class AssetClassController : BasisController
     {
+        public AssetClassController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Customer)]
         public IActionResult AddAssetClass(AssetClassViewModel data)
@@ -30,12 +33,12 @@ namespace WPM_API.Controllers.AssetMgmt
             AssetClass newAssetType = UnitOfWork.AssetClasses.CreateEmpty();
             newAssetType.Name = data.Name;
             newAssetType.fromAdmin = data.fromAdmin;
-            newAssetType.Customer= customer;
+            newAssetType.Customer = customer;
             newAssetType.AssetType = assetType;
 
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetClassViewModel>(newAssetType), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetClassViewModel>(newAssetType), serializerSettings);
 
             return Ok(json);
         }
@@ -52,7 +55,7 @@ namespace WPM_API.Controllers.AssetMgmt
                 result.Add(Mapper.Map<AssetClassViewModel>(assetClass));
             }
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return Ok(json);
         }

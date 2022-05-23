@@ -1,12 +1,12 @@
 ﻿using Azure.Storage.Blobs.Models;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.Infrastructure;
+using WPM_API.Models;
+using WPM_API.Options;
 using File = WPM_API.Data.DataContext.Entities.File;
 
 namespace WPM_API.Controllers
@@ -14,14 +14,18 @@ namespace WPM_API.Controllers
     [Route("admin-device-option")]
     public class AdminDeviceOptionController : BasisController
     {
+        public AdminDeviceOptionController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         public async Task<IActionResult> AddAdminDeviceOption([FromBody] AdminDeviceOptionViewModel data)
         {
             using (var unitOfWork = CreateUnitOfWork())
             {
                 FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                    _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository,
+                    appSettings.FileRepositoryFolder);
                 AdminDeviceOption newOption = new AdminDeviceOption();
                 newOption.Name = data.Name;
                 newOption.Description = data.Description;
@@ -37,12 +41,12 @@ namespace WPM_API.Controllers
                     await repository.UploadFile(newOption.Name + "000" + ".ps1", data.Content);
                 newScriptVersion.Number = 1;
                 newScriptVersion.Name = data.Name;
-                newScriptVersion.Attachments = new List<File>();                
+                newScriptVersion.Attachments = new List<File>();
                 newOption.Versions.Add(newScriptVersion);
                 unitOfWork.AdminOptions.MarkForInsert(newOption);
                 unitOfWork.SaveChanges();
 
-                string json = JsonConvert.SerializeObject(newOption, _serializerSettings);
+                string json = JsonConvert.SerializeObject(newOption, serializerSettings);
                 return Ok(json);
             }
         }
@@ -50,12 +54,19 @@ namespace WPM_API.Controllers
         [HttpGet]
         public IActionResult GetAdminDeviceOptions()
         {
-            List<AdminDeviceOptionViewModel> options = new List<AdminDeviceOptionViewModel>();
-            List<AdminDeviceOption> dbEntries = UnitOfWork.AdminOptions.GetAll("Versions").ToList();
-            options = Mapper.Map<List<AdminDeviceOption>, List<AdminDeviceOptionViewModel>>(dbEntries);
-            // Serialize and return the response
-            var json = JsonConvert.SerializeObject(options, _serializerSettings);
-            return new OkObjectResult(json);
+            try
+            {
+                List<AdminDeviceOptionViewModel> options = new List<AdminDeviceOptionViewModel>();
+                List<AdminDeviceOption> dbEntries = UnitOfWork.AdminOptions.GetAll("Versions").ToList();
+                options = Mapper.Map<List<AdminDeviceOption>, List<AdminDeviceOptionViewModel>>(dbEntries);
+                // Serialize and return the response
+                var json = JsonConvert.SerializeObject(options, serializerSettings);
+                return new OkObjectResult(json);
+            }
+            catch (Exception ex)
+            {
+                return new BadRequestObjectResult(ex.Message);
+            }
         }
 
         [HttpPut]
@@ -67,19 +78,19 @@ namespace WPM_API.Controllers
         [HttpGet]
         [Route("{scriptId}")]
         public async Task<IActionResult> GetLatestScriptVersion([FromRoute] string scriptId)
-        {           
+        {
             AdminDeviceOption adminOption = UnitOfWork.AdminOptions.Get(scriptId, "Versions");
             ScriptVersion lastVersion = adminOption.Versions.OrderBy(x => x.Number).Last();
             FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                    _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository,
+                    appSettings.FileRepositoryFolder);
             BlobDownloadResult dlResult = await repository.GetBlobFile(lastVersion.ContentUrl).DownloadContentAsync();
             var scriptContent = dlResult.Content.ToString();
             ScriptVersionContentViewModel scriptView = Mapper.Map<ScriptVersionContentViewModel>(lastVersion);
             scriptView.Content = scriptContent.ToString();
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(scriptView, _serializerSettings);
+            var json = JsonConvert.SerializeObject(scriptView, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -93,7 +104,7 @@ namespace WPM_API.Controllers
                 {
                     AdminDeviceOption toDelete = unitOfWork.AdminOptions.Get(optionId, "Versions");
                     FileRepository.FileRepository repository =
-                            new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                            new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
 
                     List<ScriptVersion> scriptVersions = toDelete.Versions;
                     List<Parameter> parameters = new List<Parameter>();
@@ -169,8 +180,8 @@ namespace WPM_API.Controllers
             [FromBody] ScriptVersionAddViewModel scriptVersionAdd)
         {
             FileRepository.FileRepository repository =
-                    new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                        _appSettings.FileRepositoryFolder);
+                    new FileRepository.FileRepository(connectionStrings.FileRepository,
+                        appSettings.FileRepositoryFolder);
 
             AdminDeviceOption adminOption = UnitOfWork.AdminOptions.Get(scriptId, "Versions");
             ScriptVersion newScriptVersion = new ScriptVersion();
@@ -190,7 +201,7 @@ namespace WPM_API.Controllers
             AdminDeviceOptionViewModel result = Mapper.Map<AdminDeviceOption, AdminDeviceOptionViewModel>(scriptVersions);
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -210,7 +221,7 @@ namespace WPM_API.Controllers
                 unitOfWork.AdminOptions.MarkForUpdate(toEdit, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(toEdit, _serializerSettings);
+                var json = JsonConvert.SerializeObject(toEdit, serializerSettings);
                 return Ok(json);
             }
 

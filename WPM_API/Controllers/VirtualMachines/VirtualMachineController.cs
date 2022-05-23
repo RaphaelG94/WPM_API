@@ -1,18 +1,14 @@
-﻿using WPM_API.Azure;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Linq.Dynamic.Core;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
 using WPM_API.Data.Models;
-using WPM_API.FileRepository;
 using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Management.Monitor.Fluent.Models;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Dynamic.Core;
-using System.Reflection;
-using System.Threading.Tasks;
+using WPM_API.Options;
 using AZURE = WPM_API.Azure.Models;
 using DATA = WPM_API.Data.DataContext.Entities;
 
@@ -21,6 +17,10 @@ namespace WPM_API.Controllers.VirtualMachines
     [Route("virtual-machines")]
     public class VirtualMachineController : BasisController
     {
+        public VirtualMachineController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Customer)]
         public async Task<IActionResult> CreateVirtualMachineAsync([FromBody] VirtualMachineAddViewModel vmData)
@@ -106,12 +106,12 @@ namespace WPM_API.Controllers.VirtualMachines
                     unitOfWork.SaveChanges();
 
                     // Create Storage
-                    ResourcesRepository fileRepo = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.TempFolder);
+                    ResourcesRepository fileRepo = new ResourcesRepository(connectionStrings.FileRepository, appSettings.TempFolder);
                     var tempStorageCredentials = new AZURE.StorageCredentialModel()
                     {
-                        ScriptAzureStoragePath = _appSettings.AzureStoragePath + _appSettings.TempFolder + "/",
-                        ScriptStorageAccountKey = _appSettings.StorageAccountKey,
-                        ScriptStorageAccountName = _appSettings.StorageAccountName
+                        ScriptAzureStoragePath = appSettings.AzureStoragePath + appSettings.TempFolder + "/",
+                        ScriptStorageAccountKey = appSettings.StorageAccountKey,
+                        ScriptStorageAccountName = appSettings.StorageAccountName
                     };
                     var assembly = Assembly.Load("WPM_API");
                     var scriptcontent = assembly.GetManifestResourceStream("WPM_API.Resources.ScriptFolder.SmartDeployNoTouchInstaller.ps1");
@@ -131,7 +131,7 @@ namespace WPM_API.Controllers.VirtualMachines
                     unitOfWork.SaveChanges();
                 }
                 // Serialize and return result
-                var json = JsonConvert.SerializeObject(Mapper.Map<DATA.VirtualMachine, VirtualMachineViewModel>(vm), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<DATA.VirtualMachine, VirtualMachineViewModel>(vm), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)
@@ -189,7 +189,7 @@ namespace WPM_API.Controllers.VirtualMachines
         {
             List<DATA.VirtualMachine> vms = new List<DATA.VirtualMachine>();
             vms = UnitOfWork.VirtualMachines.GetAll().Where(x => x.CurrentCustomerId == customerId).ToList();
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<DATA.VirtualMachine>, List<VirtualMachineViewModel>>(vms), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<DATA.VirtualMachine>, List<VirtualMachineViewModel>>(vms), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -203,7 +203,7 @@ namespace WPM_API.Controllers.VirtualMachines
             DATA.CloudEntryPoint creds = GetCEP(customerId);
             AzureCommunicationService azure = new AzureCommunicationService(creds.TenantId, creds.ClientId, creds.ClientSecret);
             List<AZURE.VirtualMachineModel> vms = await azure.VirtualMachineService().GetVirtualMachinesAsync(subscriptionAzureId);
-            
+
             foreach (AZURE.VirtualMachineModel vm in vms)
             {
                 if (vm.SystemDisk.Name == diskName)
@@ -211,7 +211,7 @@ namespace WPM_API.Controllers.VirtualMachines
                     return BadRequest("There already exists a disk named '" + diskName + "'");
                 }
             }
-            
+
             return new OkResult();
         }
 
@@ -228,7 +228,7 @@ namespace WPM_API.Controllers.VirtualMachines
             DATA.CloudEntryPoint creds = GetCEP(customerId);
             AzureCommunicationService azure = new AzureCommunicationService(creds.TenantId, creds.ClientId, creds.ClientSecret);
             List<AZURE.VirtualMachineModel> vms = await azure.VirtualMachineService().GetVirtualMachinesAsync(subscriptionAzureId);
-            
+
             foreach (AZURE.VirtualMachineModel vm in vms)
             {
                 if (vm.Name == vmName)
@@ -236,7 +236,7 @@ namespace WPM_API.Controllers.VirtualMachines
                     return BadRequest("There already exists a VM with the name " + vmName);
                 }
             }
-            
+
             return new OkResult();
         }
     }

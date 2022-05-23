@@ -1,16 +1,15 @@
-﻿using WPM_API.Common;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Data.DataContext;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.FileRepository;
-using WPM_API.TransferModels;
 using WPM_API.Models.Release_Mgmt;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Options;
+using WPM_API.TransferModels;
 using File = WPM_API.Data.DataContext.Entities.File;
 
 namespace WPM_API.Controllers.Releas_Mgmt
@@ -18,6 +17,10 @@ namespace WPM_API.Controllers.Releas_Mgmt
     [Route("osModels")]
     public class OSModelController : BasisController
     {
+        public OSModelController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Authorize(Policy = Constants.Policies.Admin)]
         public IActionResult GetOSModels()
@@ -32,7 +35,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
                 osModelData.Content = Mapper.Map<FileRef>(osModel.Content);
                 result.OsModels.Add(osModelData);
             }
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -72,7 +75,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
             result.HardwareModels = Mapper.Map<List<HardwareModelViewModel>>(newOSModel.HardwareModels);
             result.Content = Mapper.Map<FileRef>(newOSModel.Content);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -97,7 +100,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
 
             // Delete content file
             File contentToDelete = toDelete.Content;
-            ResourcesRepository resourcesRepository = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository resourcesRepository = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             await resourcesRepository.DeleteFile(contentToDelete.Name);
             UnitOfWork.Files.MarkForDelete(contentToDelete);
 

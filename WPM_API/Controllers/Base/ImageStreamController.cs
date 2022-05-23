@@ -1,14 +1,12 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Base
 {
@@ -16,12 +14,16 @@ namespace WPM_API.Controllers.Base
     [Authorize(Policy = Constants.Policies.Systemhouse)]
     public class ImageStreamController : BasisController
     {
+        public ImageStreamController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         public IActionResult GetImageStreams()
         {
             List<ImageStream> imageStreams = UnitOfWork.ImageStreams.GetAll("Images", "Icon", "Images.Systemhouses", "Images.Customers").Where(x => x.CreatedByUserId == GetCurrentUser().Id).ToList();
             List<ImageStreamViewModel> result = Mapper.Map<List<ImageStreamViewModel>>(imageStreams);
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -33,7 +35,7 @@ namespace WPM_API.Controllers.Base
             UnitOfWork.ImageStreams.MarkForInsert(newStream, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(newStream, _serializerSettings);
+            var json = JsonConvert.SerializeObject(newStream, serializerSettings);
             return Ok(json);
         }
 
@@ -104,7 +106,7 @@ namespace WPM_API.Controllers.Base
                 unitOfWork.ImageStreams.MarkForUpdate(toEdit, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(toEdit, _serializerSettings);
+                var json = JsonConvert.SerializeObject(toEdit, serializerSettings);
                 return Ok(json);
             }
         }
@@ -139,9 +141,9 @@ namespace WPM_API.Controllers.Base
         [Route("icon/upload")]
         public async Task<IActionResult> UploadIconAsync(Microsoft.AspNetCore.Http.IFormFile file)
         {
-            FileRepository.FileRepository iconRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository iconRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             string id = await iconRepo.UploadFile(file.OpenReadStream());
-            var json = JsonConvert.SerializeObject(new { Id = id }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -150,7 +152,7 @@ namespace WPM_API.Controllers.Base
         public async Task<IActionResult> DownloadFileAsync([FromRoute] string fileId)
         {
             // TODO: Get files from CSDP
-            FileRepository.FileRepository software = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             var file = UnitOfWork.Files.Get(fileId);
             if (file.Guid != null)
             {
@@ -185,7 +187,7 @@ namespace WPM_API.Controllers.Base
                 result = Mapper.Map<FileRefModel>(imageStream.Icon);
             }
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 

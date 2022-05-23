@@ -1,12 +1,11 @@
-﻿using DATA = WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.Authorization;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Models;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers
 {
@@ -14,8 +13,12 @@ namespace WPM_API.Controllers
     [Authorize(Policy = Common.Constants.Policies.Customer)]
     public class ReleasePlanController : BasisController
     {
+        public ReleasePlanController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
-        public IActionResult AddReleasePlan ([FromBody] ReleasePlanViewModel releasePlan)
+        public IActionResult AddReleasePlan([FromBody] ReleasePlanViewModel releasePlan)
         {
             DATA.Customer customer = UnitOfWork.Customers.GetOrNull(releasePlan.CustomerId);
             if (customer == null)
@@ -26,12 +29,12 @@ namespace WPM_API.Controllers
             UnitOfWork.ReleasePlans.MarkForInsert(newReleasePlan, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<ReleasePlanViewModel>(newReleasePlan), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<ReleasePlanViewModel>(newReleasePlan), serializerSettings);
             return Ok(json);
         }
 
         [HttpPut]
-        public IActionResult EditReleasePlan ([FromBody] ReleasePlanViewModel data)
+        public IActionResult EditReleasePlan([FromBody] ReleasePlanViewModel data)
         {
             DATA.ReleasePlan toEdit = UnitOfWork.ReleasePlans.GetOrNull(data.Id);
             if (toEdit == null)
@@ -44,13 +47,14 @@ namespace WPM_API.Controllers
             UnitOfWork.ReleasePlans.MarkForUpdate(toEdit, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<ReleasePlanViewModel>(toEdit), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<ReleasePlanViewModel>(toEdit), serializerSettings);
             return Ok(json);
         }
 
         [HttpDelete]
         [Route("delete/{releasePlanId}")]
-        public  IActionResult DeleteReleasePlan([FromRoute] string releasePlanId) {
+        public IActionResult DeleteReleasePlan([FromRoute] string releasePlanId)
+        {
             DATA.ReleasePlan toDelete = UnitOfWork.ReleasePlans.GetOrNull(releasePlanId);
             if (toDelete == null)
             {
@@ -59,8 +63,8 @@ namespace WPM_API.Controllers
 
             UnitOfWork.ReleasePlans.MarkForDelete(toDelete, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
-            
-            var json = JsonConvert.SerializeObject(Mapper.Map<ReleasePlanViewModel>(toDelete), _serializerSettings);
+
+            var json = JsonConvert.SerializeObject(Mapper.Map<ReleasePlanViewModel>(toDelete), serializerSettings);
             return Ok(json);
         }
 
@@ -70,7 +74,7 @@ namespace WPM_API.Controllers
         {
             List<DATA.ReleasePlan> releasePlans = UnitOfWork.ReleasePlans.GetAll("Customer").Where(x => x.CustomerId == customerId).ToList();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<ReleasePlanViewModel>>(releasePlans), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<ReleasePlanViewModel>>(releasePlans), serializerSettings);
             return Ok(json);
         }
 

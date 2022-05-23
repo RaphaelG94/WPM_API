@@ -1,17 +1,16 @@
-﻿using System.Linq;
+﻿using WPM_API.Controllers;
+using WPM_API.Controllers.Storages;
 using WPM_API.Data.DataContext;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Entities.AssetMgmt;
 using WPM_API.Data.DataContext.Entities.SmartDeploy;
 using WPM_API.Data.DataContext.Entities.Storages;
 using WPM_API.Data.Models;
-using WPM_API.TransferModels;
-using WPM_API.TransferModels.SmartDeploy;
-using WPM_API.Controllers;
-using WPM_API.Controllers.Storages;
 using WPM_API.Models;
 using WPM_API.Models.AssetMgmt;
 using WPM_API.Models.Release_Mgmt;
+using WPM_API.TransferModels;
+using WPM_API.TransferModels.SmartDeploy;
 using static WPM_API.Controllers.Base.ImageStreamController;
 using static WPM_API.Controllers.CustomerImageController;
 using static WPM_API.Controllers.ReleasePlanController;
@@ -25,6 +24,26 @@ namespace WPM_API.Code.Mappers.Data
     {
         public DataMapper()
         {
+            CreateMap<File, FileRefViewModel>().ReverseMap();
+            CreateMap<RuleType, TypeViewModel>().ReverseMap();
+            CreateMap<Location, AddLocationViewModel>().ReverseMap();
+            CreateMap<Company, UpdateMainCompanyViewModel>().ReverseMap();
+            CreateMap<Person, PersonViewModel>().ReverseMap();
+            CreateMap<Client, ClientDetailInformation>().Ignore(x => x.MACAddress).ReverseMap();
+            CreateMap<Base, BaseNameAndIDModel>().ReverseMap();
+            CreateMap<TransferModels.FileRef, File>().ForMember(
+                    dest => dest.Guid,
+                    opt => opt.MapFrom(src => src.Id))
+                .Ignore(x => x.Id).Ignore(x => x.TaskId).Ignore(x => x.Task)
+                .ReverseMap();
+            CreateMap<BaseStatusViewModel, BaseStatus>()
+                .Ignore(x => x.CreatedByUserId)
+                .Ignore(x => x.CreatedDate)
+                .Ignore(x => x.UpdatedByUserId)
+                .Ignore(x => x.UpdatedDate)
+                .Ignore(x => x.DeletedByUserId)
+                .Ignore(x => x.DeletedDate)
+                .ReverseMap();
             CreateMap<Driver, CustomerDriver>()
                 .Ignore(x => x.CustomerId)
                 .Ignore(x => x.DriverId)
@@ -52,11 +71,11 @@ namespace WPM_API.Code.Mappers.Data
                .ForMember(
                    dest => dest.Customers,
                    opt => opt.MapFrom(x => x.Customers.Select(y => y.CustomerId).ToArray()))
-               /*
-                .ForMember(
-                    dest => dest.Clients,
-                    opt => opt.MapFrom(x => x.Clients.Select(y => y.ClientId).ToArray()))
-               */
+                /*
+                 .ForMember(
+                     dest => dest.Clients,
+                     opt => opt.MapFrom(x => x.Clients.Select(y => y.ClientId).ToArray()))
+                */
                 .ReverseMap();
             CreateMap<Image, CustomerImage>()
                 .Ignore(x => x.CustomerId)
@@ -89,7 +108,7 @@ namespace WPM_API.Code.Mappers.Data
                 .Ignore(x => x.AdminPasswordLinux)
                 .Ignore(x => x.PartitionEncryptionPassLinux)
                 */
-                .Ignore(x => x.LocalSettingLinux)                
+                .Ignore(x => x.LocalSettingLinux)
                 .Ignore(x => x.ProductKey)
                 .ReverseMap();
             CreateMap<SoftwareClientViewModel, CustomerSoftware>()
@@ -182,7 +201,9 @@ namespace WPM_API.Code.Mappers.Data
                 dest => dest.DNS
             ).Ignore(
                 dest => dest.Office365ConfigurationXML
-            );
+            )
+            .Ignore(dest => dest.OrganizationalUnits)
+            .ReverseMap();
 
             CreateMap<DomainViewModel, Domain>().ForMember(
                 dest => dest.Id,
@@ -226,7 +247,9 @@ namespace WPM_API.Code.Mappers.Data
                 dest => dest.DNS
             ).Ignore(
                 dest => dest.Office365ConfigurationXML
-            ).ReverseMap();
+            )
+            .Ignore(dest => dest.OrganizationalUnits)
+            .ReverseMap();
 
 
             CreateMap<GroupPolicyObject, GroupPolicyObjectViewModel>().ForMember(
@@ -443,15 +466,12 @@ namespace WPM_API.Code.Mappers.Data
             // NUR beim Hinzufügen ist die ID die Guid
             CreateMap<Models.FileRefModel, File>().ForMember(
                     dest => dest.Guid,
-                    opt => {
+                    opt =>
+                    {
                         //opt.Condition((src, dest) => !dest.Id.Equals(src.Id));
                         opt.MapFrom(src => src.Id);
                     })
-                .Ignore(x => x.Id).Ignore(x => x.TaskId).Ignore(x => x.Task);
-            CreateMap<TransferModels.FileRef, File>().ForMember(
-                    dest => dest.Guid,
-                    opt => opt.MapFrom(src => src.Id))
-                .Ignore(x => x.Id).Ignore(x => x.TaskId).Ignore(x => x.Task);
+                .Ignore(x => x.Id).Ignore(x => x.TaskId).Ignore(x => x.Task).ReverseMap();
             CreateMap<Rule, RuleViewModel>().ForMember(
                 dest => dest.Type,
                 opt => opt.MapFrom(x => x.Type.Name))
@@ -543,28 +563,28 @@ namespace WPM_API.Code.Mappers.Data
                 .ForMember(
                     dest => dest.Children,
                     opt => opt.MapFrom(x => x.Children))
-                .AfterMap((s, x) => x.IsLeaf = false);
+                .AfterMap((s, x) => x.IsLeaf = false).ReverseMap();
             CreateMap<OUBaseLevelAddViewModel, OrganizationalUnit>()
                 .Ignore(x => x.Id)
                 .Ignore(x => x.IsLeaf)
                 .Ignore(x => x.Children)
                 .Ignore(x => x.Description)
                 .AfterMap((s, x) => x.IsLeaf = true);
-            CreateMap<OrganizationalUnit, OUViewModel>().ForPath(
-                    d => d.OULevels, o => o.MapFrom(s => !s.IsLeaf))
-                .ForPath(
-                    d => d.OUBaseLevels, o => o.MapFrom(s => s.IsLeaf));
-            CreateMap<OrganizationalUnit, OUScriptViewModel>();
-            CreateMap<OUScriptViewModel, OrganizationalUnit>().ForMember(
-                dest => dest.Id,
-                opt =>
-                {
-                    opt.Ignore();
-                    opt.UseDestinationValue();
-                }).ReverseMap();
+            //CreateMap<OrganizationalUnit, OUViewModel>().ForPath(
+            //        d => d.OULevels, o => o.MapFrom(s => !s.IsLeaf))
+            //    .ForPath(
+            //        d => d.OUBaseLevels, o => o.MapFrom(s => s.IsLeaf)).ReverseMap();
+            //CreateMap<OrganizationalUnit, OUScriptViewModel>().ReverseMap();
+            //CreateMap<OUScriptViewModel, OrganizationalUnit>().ForMember(
+            //    dest => dest.Id,
+            //    opt =>
+            //    {
+            //        opt.Ignore();
+            //        opt.UseDestinationValue();
+            //    }).ReverseMap();
 
             /******************** Client ***************************************/
-            CreateMap<Client, ClientViewModel>().ReverseMap();
+            CreateMap<Client, ClientViewModel>().Ignore(x => x.AssignedOptions).ReverseMap();
             CreateMap<Client, WPM_API.Models.ClientAddViewModelWeb>()
                 .Ignore(x => x.CustomerName)
                 .Ignore(x => x.MacAddresses)
@@ -589,7 +609,7 @@ namespace WPM_API.Code.Mappers.Data
                 .Ignore(x => x.DedicatedDownloadLink)
                 .Ignore(x => x.NextSoftwareId)
                 .Ignore(x => x.MinimalSoftwareId)
-                .Ignore(x => x.PrevSoftwareId) 
+                .Ignore(x => x.PrevSoftwareId)
                 .Ignore(x => x.PublishInShop)
                 .Ignore(x => x.StreamId)
                 .Ignore(x => x.SoftwareStreamId)
@@ -641,7 +661,7 @@ namespace WPM_API.Code.Mappers.Data
                 .Ignore(x => x.RuleApplicabilityId)
                 .Ignore(x => x.Status)
                 .Ignore(x => x.Type);
-            CreateMap<BiosViewModels, Bios>().ReverseMap();
+            CreateMap<BiosViewModels, Bios>().Ignore(x => x.BiosSettings).ReverseMap();
             CreateMap<OsViewModels, OS>().ReverseMap();
             CreateMap<HardwareViewModels, Hardware>().ReverseMap();
             CreateMap<HDDPartitionViewModels, HDDPartition>().ReverseMap();
@@ -661,7 +681,7 @@ namespace WPM_API.Code.Mappers.Data
             /******************** Category ***************************************/
             CreateMap<ShopItemCategory, CategoryViewModel>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Category.Id))
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Category.Name));
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Category.Name)).ReverseMap();
             CreateMap<Category, CategoryViewModel>().ReverseMap();
             CreateMap<CategoryAddViewModel, Category>().ReverseMap();
             CreateMap<Category, CategoryAddViewModel>().ReverseMap().Ignore(x => x.Id);
@@ -783,6 +803,10 @@ namespace WPM_API.Code.Mappers.Data
                 .Ignore(x => x.DeletedDate)
                 .Ignore(x => x.UpdatedByUserId)
                 .Ignore(x => x.UpdatedDate)
+                .Ignore(x => x.Architecture)
+                .Ignore(x => x.OsVersionNames)
+                .Ignore(x => x.Win10Versions)
+                .Ignore(x => x.Win11Versions)
                 .ReverseMap();
             CreateMap<ActivityLog, ActivityLogViewModel>().ReverseMap();
         }

@@ -1,9 +1,8 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class Attachment : IEntity
     {

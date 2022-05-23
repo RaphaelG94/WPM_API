@@ -1,18 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     [Route("persons")]
     public class PersonController : BasisController
     {
+        public PersonController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Create new Person.
         /// </summary>
@@ -20,7 +24,8 @@ namespace WPM_API.Controllers
         /// <returns>Person</returns>
         [HttpPost]
         [Authorize(Policy = Constants.Roles.Customer)]
-        public IActionResult AddPerson([FromBody] PersonViewModel personAdd) {
+        public IActionResult AddPerson([FromBody] PersonViewModel personAdd)
+        {
             Person person = UnitOfWork.Persons.CreateEmpty();
             person.GivenName = personAdd.GivenName;
             person.MiddleName = personAdd.MiddleName;
@@ -48,18 +53,19 @@ namespace WPM_API.Controllers
 
             person.UpdatedDate = DateTime.Now;
             person.UpdatedByUserId = LoggedUser.Id;
-           
+
             try
             {
                 UnitOfWork.SaveChanges();
-            } catch (Exception exc)
+            }
+            catch (Exception exc)
             {
                 return BadRequest("Person could not be created " + " " + exc.Message + " " + exc.InnerException);
             }
 
             person = UnitOfWork.Persons.Get(person.Id, "Company");
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(person), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(person), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -79,20 +85,20 @@ namespace WPM_API.Controllers
             List<Person> dbEntries = UnitOfWork.Persons.GetAll().Where(x => x.CustomerId == customerId && x.Company == null).ToList();
             customerPersons = Mapper.Map<List<Person>, List<PersonViewModel>>(dbEntries);
             // Serialize and return the result
-            var json = JsonConvert.SerializeObject(customerPersons, _serializerSettings);
+            var json = JsonConvert.SerializeObject(customerPersons, serializerSettings);
             return new OkObjectResult(json);
         }
 
         [HttpGet]
         [Authorize(Constants.Roles.Customer)]
         [Route("all/{customerId}")]
-        public IActionResult GetCustomersPersons ([FromRoute] string customerId)
+        public IActionResult GetCustomersPersons([FromRoute] string customerId)
         {
             List<PersonViewModel> customerPersons = new List<PersonViewModel>();
             List<Person> allPersons = UnitOfWork.Persons.GetAll().Where(x => x.CustomerId == customerId).ToList();
             customerPersons = Mapper.Map<List<PersonViewModel>>(allPersons);
 
-            var json = JsonConvert.SerializeObject(customerPersons, _serializerSettings);
+            var json = JsonConvert.SerializeObject(customerPersons, serializerSettings);
             return Ok(json);
         }
 
@@ -146,7 +152,7 @@ namespace WPM_API.Controllers
             }
 
             // Serialize & return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(expert), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(expert), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -172,7 +178,7 @@ namespace WPM_API.Controllers
                     Company company = UnitOfWork.Companies.Get(personToDelete.Company.Id);
                     company.ExpertId = null;
                 }
-            }            
+            }
             UnitOfWork.Persons.MarkForDelete(personToDelete, GetCurrentUser().Id);
 
             try
@@ -236,7 +242,7 @@ namespace WPM_API.Controllers
             }
             toEdit = UnitOfWork.Persons.GetAll("Company").Where(x => x.Id == toEdit.Id).First();
             // Serialize and return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(toEdit), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(toEdit), serializerSettings);
             return new OkObjectResult(json);
         }
     }

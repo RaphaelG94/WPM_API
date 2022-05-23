@@ -1,23 +1,18 @@
-﻿using WPM_API.Common;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using DATA = WPM_API.Data.DataContext.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using WPM_API.Azure;
-using WPM_API.Data.DataContext.Entities.Storages;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
-using WPM_API.TransferModels;
-using WPM_API.Models;
+using Newtonsoft.Json;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.DataContext.Entities.Storages;
 using WPM_API.Data.Models;
-using System.Security.Cryptography;
-using System.Text;
-using System.IO;
+using WPM_API.Models;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers
 {
@@ -25,6 +20,10 @@ namespace WPM_API.Controllers
     [Authorize(Policy = Constants.Policies.Customer)]
     public class CustomerImageController : BasisController
     {
+        public CustomerImageController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Route("{customerId}")]
         public IActionResult GetCustomersOSImages([FromRoute] string customerId)
@@ -38,7 +37,7 @@ namespace WPM_API.Controllers
             List<DATA.CustomerImage> images = UnitOfWork.CustomerImages.GetAll("Unattend", "OEMPartition").Where(x => x.CustomerId == customerId).ToList();
             List<CustomerImageViewModel> result = Mapper.Map<List<CustomerImageViewModel>>(images);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -89,9 +88,10 @@ namespace WPM_API.Controllers
                         }
 
                         azureCustomer = new AzureCommunicationService(cep.TenantId, cep.ClientId, cep.ClientSecret);
-                    } else
+                    }
+                    else
                     {
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
 
                     connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
@@ -124,10 +124,11 @@ namespace WPM_API.Controllers
                     unitOfWork.CustomerImages.MarkForDelete(toDelete, GetCurrentUser().Id);
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(Mapper.Map<CustomerImageViewModel>(toDelete), _serializerSettings);
+                    var json = JsonConvert.SerializeObject(Mapper.Map<CustomerImageViewModel>(toDelete), serializerSettings);
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -164,7 +165,7 @@ namespace WPM_API.Controllers
                     AzureCommunicationService azureCustomer;
                     if (csdp.Managed)
                     {
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -212,7 +213,8 @@ namespace WPM_API.Controllers
                         customerImage.OEMPartition.Name = file.FileName;
                         unitOfWork.CustomerImages.MarkForUpdate(customerImage, GetCurrentUser().Id);
                         unitOfWork.SaveChanges();
-                    } else
+                    }
+                    else
                     {
                         customerImage.OEMPartition = new DATA.File();
                         customerImage.OEMPartition.Name = file.FileName;
@@ -236,7 +238,7 @@ namespace WPM_API.Controllers
             List<CustomerImageStream> streams = UnitOfWork.CustomerImageStreams.GetAll("Images", "Icon", "Images.OEMPartition", "Images.Unattend")
                 .Where(x => x.CustomerId == customerId).ToList();
 
-            return Ok(JsonConvert.SerializeObject(streams, _serializerSettings));
+            return Ok(JsonConvert.SerializeObject(streams, serializerSettings));
         }
 
         [HttpDelete]
@@ -270,7 +272,7 @@ namespace WPM_API.Controllers
                 }
                 else
                 {
-                    azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                    azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                 }
 
                 string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
@@ -309,7 +311,7 @@ namespace WPM_API.Controllers
                 unitOfWork.CustomerImageStreams.MarkForDelete(stream, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(stream, _serializerSettings);
+                var json = JsonConvert.SerializeObject(stream, serializerSettings);
                 return Ok(json);
             }
         }
@@ -320,7 +322,7 @@ namespace WPM_API.Controllers
         {
             CustomerImageStream stream = UnitOfWork.CustomerImageStreams.Get(streamId, "Images");
 
-            var json = JsonConvert.SerializeObject(stream.Images, _serializerSettings);
+            var json = JsonConvert.SerializeObject(stream.Images, serializerSettings);
             return Ok(json);
         }
 
@@ -355,7 +357,7 @@ namespace WPM_API.Controllers
                     AzureCommunicationService azureCustomer;
                     if (csdp.Managed)
                     {
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -381,7 +383,8 @@ namespace WPM_API.Controllers
 
                     // Delete old file and upload the new one
                     CloudBlockBlob blob;
-                    if (customerImage.Unattend != null) {
+                    if (customerImage.Unattend != null)
+                    {
                         blob = csdpContainer.GetBlockBlobReference("Image_Repository/" + customerImageStream.SubFolderName + "/" + customerImage.Unattend.Name);
                         if (await blob.ExistsAsync())
                         {
@@ -405,7 +408,8 @@ namespace WPM_API.Controllers
                         customerImage.Unattend.Name = file.FileName;
                         unitOfWork.CustomerImages.MarkForUpdate(customerImage, GetCurrentUser().Id);
                         unitOfWork.SaveChanges();
-                    } else
+                    }
+                    else
                     {
                         customerImage.Unattend = new DATA.File();
                         customerImage.Unattend.Name = file.FileName;
@@ -454,7 +458,7 @@ namespace WPM_API.Controllers
                     AzureCommunicationService azureCustomer;
                     if (csdp.Managed)
                     {
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -532,7 +536,7 @@ namespace WPM_API.Controllers
                     AzureCommunicationService azureCustomer;
                     if (csdp.Managed)
                     {
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -591,7 +595,7 @@ namespace WPM_API.Controllers
                 unitOfWork.CustomerImageStreams.MarkForUpdate(imageStream, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(imageStream, _serializerSettings);
+                var json = JsonConvert.SerializeObject(imageStream, serializerSettings);
 
                 return Ok(json);
             }
@@ -599,7 +603,7 @@ namespace WPM_API.Controllers
 
         [HttpGet]
         [Route("{customerId}/checkRevisionNumbers")]
-        public IActionResult GetRevisionImages ([FromRoute] string customerId)
+        public IActionResult GetRevisionImages([FromRoute] string customerId)
         {
             List<Image> result = new List<Image>();
             // Get all software streams 
@@ -639,7 +643,7 @@ namespace WPM_API.Controllers
                     }
                 }
             }
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -728,7 +732,7 @@ namespace WPM_API.Controllers
                     {
                         sw.Customers = null;
                     }
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -741,7 +745,7 @@ namespace WPM_API.Controllers
 
         [HttpPost]
         [Route("repairImage/{customerId}/{imageId}")]
-        public async Task<IActionResult> RepairCustomerImage ([FromRoute] string imageId, [FromRoute] string customerId) 
+        public async Task<IActionResult> RepairCustomerImage([FromRoute] string imageId, [FromRoute] string customerId)
         {
             try
             {
@@ -783,7 +787,7 @@ namespace WPM_API.Controllers
                     }
 
                     // Copy files to csdp
-                    CloudStorageAccount srcStrgAcc = CloudStorageAccount.Parse(_appSettings.FileDestConnectionString);
+                    CloudStorageAccount srcStrgAcc = CloudStorageAccount.Parse(appSettings.FileDestConnectionString);
                     CloudBlobClient csdpClient = srcStrgAcc.CreateCloudBlobClient();
                     CloudBlobContainer csdpBitstream = csdpClient.GetContainerReference("bsdp-v202011");
 
@@ -795,7 +799,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -869,10 +873,11 @@ namespace WPM_API.Controllers
                     unitOfWork.SaveChanges();
 
                     ImageViewModel result = Mapper.Map<ImageViewModel>(image);
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
-                }                
-            } catch (Exception e)
+                }
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -880,7 +885,7 @@ namespace WPM_API.Controllers
 
         [HttpGet]
         [Route("{customerId}/newImages")]
-        public IActionResult GetNewImages ([FromRoute] string customerId)
+        public IActionResult GetNewImages([FromRoute] string customerId)
         {
             try
             {
@@ -947,23 +952,24 @@ namespace WPM_API.Controllers
                                 {
                                     result.Add(adminStream.Images.Find(x => x.BuildNr == latestAdminImageVersion));
                                 }
-                            }                            
+                            }
                         }
                     }
 
                     // Return result
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
         }
-        
+
         [HttpPost]
         [Route("{customerId}/shopNewImage/{imageId}")]
-        public async Task<IActionResult> ShopNewImage ([FromRoute] string customerId, [FromRoute] string imageId)
+        public async Task<IActionResult> ShopNewImage([FromRoute] string customerId, [FromRoute] string imageId)
         {
             try
             {
@@ -994,7 +1000,7 @@ namespace WPM_API.Controllers
                     }
                     ImageStream imageStream = unitOfWork.ImageStreams.Get(image.ImageStreamId);
 
-                    CloudStorageAccount srcStrgAcc = CloudStorageAccount.Parse(_appSettings.FileDestConnectionString);
+                    CloudStorageAccount srcStrgAcc = CloudStorageAccount.Parse(appSettings.FileDestConnectionString);
                     CloudBlobClient csdpClient = srcStrgAcc.CreateCloudBlobClient();
                     CloudBlobContainer csdpBitstream = csdpClient.GetContainerReference("bsdp-v202011");
 
@@ -1006,7 +1012,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -1135,7 +1141,7 @@ namespace WPM_API.Controllers
                     unitOfWork.Customers.MarkForUpdate(customer, GetCurrentUser().Id);
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(image, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(image, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -1147,8 +1153,8 @@ namespace WPM_API.Controllers
                     innerExceptionMessage = e.InnerException.Message;
                 }
                 return BadRequest("ERROR: " + e.Message + "\nInnerException: " + innerExceptionMessage);
-            }            
-        }           
+            }
+        }
 
         private bool IsLaterVersion(string currentVersion, string toCompare)
         {
@@ -1165,7 +1171,7 @@ namespace WPM_API.Controllers
             }
         }
 
-            private async System.Threading.Tasks.Task CopyFiles(BlobResultSegment fileList, CloudBlobDirectory srcDirectory, CloudBlobContainer destContainer, CloudBlobContainer srcContainer, CloudStorageAccount srcStrgAcc, string containerName)
+        private async System.Threading.Tasks.Task CopyFiles(BlobResultSegment fileList, CloudBlobDirectory srcDirectory, CloudBlobContainer destContainer, CloudBlobContainer srcContainer, CloudStorageAccount srcStrgAcc, string containerName)
         {
             for (int i = 0; i < fileList.Results.Count(); i++)
             {
@@ -1208,7 +1214,7 @@ namespace WPM_API.Controllers
 
         public class OSStreamSettings
         {
-            public string ProductKey { get; set; }            
+            public string ProductKey { get; set; }
             public string LocalSettingLinux { get; set; }
         }
 

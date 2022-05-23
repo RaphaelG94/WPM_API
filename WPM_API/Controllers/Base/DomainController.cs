@@ -1,25 +1,14 @@
 ﻿using Azure.Storage.Blobs.Models;
-using WPM_API.Azure;
-using WPM_API.Azure.Models;
-using WPM_API.Common;
-using WPM_API.Data.Models;
-using WPM_API.FileRepository;
-using WPM_API.Code;
-using WPM_API.Models;
-using CsvHelper;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
+using WPM_API.Code;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.FileRepository;
+using WPM_API.Models;
+using WPM_API.Options;
 using AZURE = WPM_API.Azure.Models;
 using DATA = WPM_API.Data.DataContext.Entities;
 
@@ -28,6 +17,10 @@ namespace WPM_API.Controllers
     [Route("customers/{customerId}/bases/{baseId}/domains")]
     public class DomainController : BasisController
     {
+        public DomainController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Executable Scripts for Creating a Domain
         /// </summary>
@@ -59,7 +52,7 @@ namespace WPM_API.Controllers
             List<DomainRefViewModel> domains = Mapper.Map<List<DomainRefViewModel>>(dbDomains);
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(domains, _serializerSettings);
+            var json = JsonConvert.SerializeObject(domains, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -75,12 +68,12 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> AddDomain([FromRoute] string customerId, [FromRoute] string baseId, [FromBody] DomainAddViewModel domainAdd)
         {
             // Persist Files
-/*
-            FileRef userCSV = await PersistFileAsync(domainAdd.DomainUserCSV);
-            FileRef gpoWallpaper = await PersistFileAsync(domainAdd.Gpo.Wallpaper);
-            FileRef gpoLockscreen = await PersistFileAsync(domainAdd.Gpo.Lockscreen);
-*/
-            
+            /*
+                        FileRef userCSV = await PersistFileAsync(domainAdd.DomainUserCSV);
+                        FileRef gpoWallpaper = await PersistFileAsync(domainAdd.Gpo.Wallpaper);
+                        FileRef gpoLockscreen = await PersistFileAsync(domainAdd.Gpo.Lockscreen);
+            */
+
             DomainViewModel domain = new DomainViewModel();
             // General
             DATA.Domain newDomain = Mapper.Map<DATA.Domain>(domainAdd);
@@ -89,7 +82,7 @@ namespace WPM_API.Controllers
 
             // Create AdvancedProperty for BASE
             DATA.Base fetchedBase = null;
-            using(var unitOfWork = CreateUnitOfWork())
+            using (var unitOfWork = CreateUnitOfWork())
             {
                 fetchedBase = unitOfWork.Bases.Get(baseId, "Properties");
                 DATA.AdvancedProperty netBiosName = fetchedBase.Properties.Where(x => x.Name == "$NetBIOSName").First();
@@ -100,71 +93,71 @@ namespace WPM_API.Controllers
             }
 
             // User
-/*
-            if (userCSV != null)
-            {
-                newDomain.DomainUserCSV = new DATA.File() { Guid = userCSV.Id, Name = userCSV.Name };
-            }
-            else
-            {
-                newDomain.DomainUserCSV = null;
-            }
-*/
+            /*
+                        if (userCSV != null)
+                        {
+                            newDomain.DomainUserCSV = new DATA.File() { Guid = userCSV.Id, Name = userCSV.Name };
+                        }
+                        else
+                        {
+                            newDomain.DomainUserCSV = null;
+                        }
+            */
 
             // DNS
-/*
-            newDomain.DNS = new List<DATA.DNS>();
-            if (domainAdd.DNS.Forwarders != null)
-            {
-                foreach (var dnsAddForwarder in domainAdd.DNS.Forwarders)
-                {
-                    newDomain.DNS.Add(new DATA.DNS() { Forwarder = dnsAddForwarder });
-                }
-            }
-*/
+            /*
+                        newDomain.DNS = new List<DATA.DNS>();
+                        if (domainAdd.DNS.Forwarders != null)
+                        {
+                            foreach (var dnsAddForwarder in domainAdd.DNS.Forwarders)
+                            {
+                                newDomain.DNS.Add(new DATA.DNS() { Forwarder = dnsAddForwarder });
+                            }
+                        }
+            */
 
             // OU
-/*
-            List<DATA.OrganizationalUnit> ouStructure = Mapper.Map<List<DATA.OrganizationalUnit>>(domainAdd.OrganizationalUnits.OULevels);
-            newDomain.OrganizationalUnits = Mapper.Map<List<DATA.OrganizationalUnit>>(GenerateOURecursive(ouStructure, domainAdd.OrganizationalUnits.OUBaseLevels));
-*/
+            /*
+                        List<DATA.OrganizationalUnit> ouStructure = Mapper.Map<List<DATA.OrganizationalUnit>>(domainAdd.OrganizationalUnits.OULevels);
+                        newDomain.OrganizationalUnits = Mapper.Map<List<DATA.OrganizationalUnit>>(GenerateOURecursive(ouStructure, domainAdd.OrganizationalUnits.OUBaseLevels));
+            */
 
             // GPO
-/*
-            if (domainAdd.Gpo.Settings == null)
-            {
-                domainAdd.Gpo.Settings = GPOSettings.GetStandard();
-            }
-            newDomain.Gpo.Settings = domainAdd.Gpo.Settings;
-            if (gpoWallpaper != null)
-            {
-                newDomain.Gpo.Wallpaper = new DATA.File() { Guid = gpoWallpaper.Id, Name = gpoWallpaper.Name };
-            }
-            else
-            {
-                newDomain.Gpo.Wallpaper = null;
-            }
-            if (gpoLockscreen != null)
-            {
-                newDomain.Gpo.Lockscreen = new DATA.File() { Guid = gpoLockscreen.Id, Name = gpoLockscreen.Name };
-            }
-            else
-            {
-                newDomain.Gpo.Lockscreen = null;
-            }
-*/
+            /*
+                        if (domainAdd.Gpo.Settings == null)
+                        {
+                            domainAdd.Gpo.Settings = GPOSettings.GetStandard();
+                        }
+                        newDomain.Gpo.Settings = domainAdd.Gpo.Settings;
+                        if (gpoWallpaper != null)
+                        {
+                            newDomain.Gpo.Wallpaper = new DATA.File() { Guid = gpoWallpaper.Id, Name = gpoWallpaper.Name };
+                        }
+                        else
+                        {
+                            newDomain.Gpo.Wallpaper = null;
+                        }
+                        if (gpoLockscreen != null)
+                        {
+                            newDomain.Gpo.Lockscreen = new DATA.File() { Guid = gpoLockscreen.Id, Name = gpoLockscreen.Name };
+                        }
+                        else
+                        {
+                            newDomain.Gpo.Lockscreen = null;
+                        }
+            */
 
             // Save Domain
             using (var unitOfWork = CreateUnitOfWork())
             {
                 unitOfWork.Domains.MarkForInsert(newDomain, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
-/*
-                if (newDomain.DomainUserCSV != null)
-                {
-                    await SaveDomainUsers(customerId, baseId, newDomain);
-                }
-*/
+                /*
+                                if (newDomain.DomainUserCSV != null)
+                                {
+                                    await SaveDomainUsers(customerId, baseId, newDomain);
+                                }
+                */
             }
             SetDomainStatus(newDomain.Id, "All information has been saved.", false);
             try
@@ -177,7 +170,7 @@ namespace WPM_API.Controllers
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(GetDomainDetails(newDomain.Id), _serializerSettings);
+            var json = JsonConvert.SerializeObject(GetDomainDetails(newDomain.Id), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -201,7 +194,7 @@ namespace WPM_API.Controllers
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(GetDomainDetails(domainId), _serializerSettings);
+            var json = JsonConvert.SerializeObject(GetDomainDetails(domainId), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -233,7 +226,7 @@ namespace WPM_API.Controllers
                 // Get Version from DB
                 DATA.Script deviceOption = null;
                 List<DATA.Script> deviceOptions = unitOfWork.Scripts.GetAll("Versions").ToList();
-                
+
                 DATA.ScriptVersion version = unitOfWork.Scripts.GetAll().SelectMany(x => x.Versions)
                     .First(y => y.Id == scriptVersionId);
                 foreach (DATA.Script temp in deviceOptions)
@@ -246,8 +239,8 @@ namespace WPM_API.Controllers
                 }
                 // Get Script from FileRepository
                 FileRepository.FileRepository repository =
-                    new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                        _appSettings.FileRepositoryFolder);
+                    new FileRepository.FileRepository(connectionStrings.FileRepository,
+                        appSettings.FileRepositoryFolder);
                 string script = string.Empty;
                 try
                 {
@@ -272,9 +265,9 @@ namespace WPM_API.Controllers
                 parameters = PrefillReferences(parameters, baseId, domainId);
 
                 // Serialize and return the response
-                var json = JsonConvert.SerializeObject(parameters, _serializerSettings);
+                var json = JsonConvert.SerializeObject(parameters, serializerSettings);
                 return new OkObjectResult(json);
-            }            
+            }
         }
 
         private List<ParameterViewModel> PrefillReferences(List<ParameterViewModel> parameters, string baseId, string domainId)
@@ -582,10 +575,10 @@ namespace WPM_API.Controllers
                 DATA.ScriptVersion version = UnitOfWork.Scripts.GetAll().SelectMany(x => x.Versions)
                     .First(y => y.Id == scriptVersionId);
                 // AzureCommunicationService azure = new AzureCommunicationService(dbBase.Credentials.TenantId,
-                    // dbBase.Credentials.ClientId, dbBase.Credentials.ClientSecret);
+                // dbBase.Credentials.ClientId, dbBase.Credentials.ClientSecret);
                 FileRepository.FileRepository repository =
-                    new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                        _appSettings.FileRepositoryFolder);
+                    new FileRepository.FileRepository(connectionStrings.FileRepository,
+                        appSettings.FileRepositoryFolder);
                 BlobDownloadResult dwResult = await repository.GetBlobFile(version.ContentUrl).DownloadContentAsync();
                 var script = dwResult.Content.ToString();
 
@@ -630,13 +623,13 @@ namespace WPM_API.Controllers
 
                 // Execute Script with Params
                 // Copy File to Temp
-                FileRepository.FileRepository scriptRepository = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                FileRepository.FileRepository scriptRepository = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
 
                 var credentialModel = new Azure.Models.StorageCredentialModel()
                 {
-                    ScriptAzureStoragePath = _appSettings.AzureStoragePath + _appSettings.FileRepositoryFolder + "/",
-                    ScriptStorageAccountKey = _appSettings.StorageAccountKey,
-                    ScriptStorageAccountName = _appSettings.StorageAccountName
+                    ScriptAzureStoragePath = appSettings.AzureStoragePath + appSettings.FileRepositoryFolder + "/",
+                    ScriptStorageAccountKey = appSettings.StorageAccountKey,
+                    ScriptStorageAccountName = appSettings.StorageAccountName
                 };
 
                 using (var unitOfWork = CreateUnitOfWork())
@@ -721,9 +714,9 @@ namespace WPM_API.Controllers
                 var fileId = string.Empty;
                 var credentialModel = new StorageCredentialModel()
                 {
-                    ScriptAzureStoragePath = _appSettings.AzureStoragePath + _appSettings.TempFolder + "/",
-                    ScriptStorageAccountKey = _appSettings.StorageAccountKey,
-                    ScriptStorageAccountName = _appSettings.StorageAccountName
+                    ScriptAzureStoragePath = appSettings.AzureStoragePath + appSettings.TempFolder + "/",
+                    ScriptStorageAccountKey = appSettings.StorageAccountKey,
+                    ScriptStorageAccountName = appSettings.StorageAccountName
                 };
 
                 using (var unitOfWork = CreateUnitOfWork())
@@ -733,8 +726,8 @@ namespace WPM_API.Controllers
                 }
 
                 // Execute Scripts with Params
-                TempRepository tempRepository = new TempRepository(_connectionStrings.FileRepository, _appSettings.TempFolder);
-                DomainFileRepository domainRepository = new DomainFileRepository(_connectionStrings.FileRepository, _appSettings.DomainFileRepositoryFolder);
+                TempRepository tempRepository = new TempRepository(connectionStrings.FileRepository, appSettings.TempFolder);
+                DomainFileRepository domainRepository = new DomainFileRepository(connectionStrings.FileRepository, appSettings.DomainFileRepositoryFolder);
 
                 //Create AD
                 string scriptname = Guid.NewGuid().ToString().Replace("-", "") + ".ps1";
@@ -799,8 +792,8 @@ namespace WPM_API.Controllers
                     SetDomainStatus(domainId, "Configure GPO-Settings.", false);
                     scriptname = Guid.NewGuid().ToString().Replace("-", "") + ".ps1";
                     await tempRepository.UploadFile(scriptname, assembly.GetManifestResourceStream(resourcePath + Scripts.ConfigureGPO + ".ps1"));
-                    fileId = await domainRepository.MoveFileAsync(dbDomain.Gpo.Wallpaper.Guid, _appSettings.TempFolder);
-                    string fileId2 = await domainRepository.MoveFileAsync(dbDomain.Gpo.Lockscreen.Guid, _appSettings.TempFolder);
+                    fileId = await domainRepository.MoveFileAsync(dbDomain.Gpo.Wallpaper.Guid, appSettings.TempFolder);
+                    string fileId2 = await domainRepository.MoveFileAsync(dbDomain.Gpo.Lockscreen.Guid, appSettings.TempFolder);
                     await azure.VirtualMachineService().ExecuteVirtualMachineScriptAsync(credentialModel, vmRef, scriptname, "-NetBIOSName \"" + dbDomain.Name + "\" -TLD \"" + dbDomain.Tld + "\" -Settings \"" + dbDomain.Gpo.Settings.Replace("\"", "'") + "\" -Wallpaper \"" + fileId + "\" -Lockscreen \"" + fileId2 + "\"", fileId, fileId2);
                     await tempRepository.DeleteFile(scriptname);
                     await tempRepository.DeleteFile(fileId);
@@ -890,11 +883,11 @@ namespace WPM_API.Controllers
 
                 var credentialModel = new StorageCredentialModel()
                 {
-                    ScriptAzureStoragePath = _appSettings.AzureStoragePath + _appSettings.TempFolder + "/",
-                    ScriptStorageAccountKey = _appSettings.StorageAccountKey,
-                    ScriptStorageAccountName = _appSettings.StorageAccountName
+                    ScriptAzureStoragePath = appSettings.AzureStoragePath + appSettings.TempFolder + "/",
+                    ScriptStorageAccountKey = appSettings.StorageAccountKey,
+                    ScriptStorageAccountName = appSettings.StorageAccountName
                 };
-                    string connectionString = _connectionStrings.FileRepository;
+                    string connectionString = connectionStrings.FileRepository;
                     // Join Domain
                     await azure.VirtualMachineService().ExecuteVirtualMachineScriptAsync(vmRef, connectionString,
                         "temp", Scripts.JoinDomain + ".ps1", GetArguments(Scripts.JoinDomain, dbDomain,
@@ -1014,13 +1007,13 @@ namespace WPM_API.Controllers
         {
             var newFile = UnitOfWork.Files.CreateEmpty();
             FileRepository.FileRepository temp =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             string id = await temp.UploadFile(file.OpenReadStream());
             newFile.Guid = id;
             newFile.Name = file.FileName;
             UnitOfWork.Files.MarkForInsert(newFile);
             UnitOfWork.SaveChanges();
-            var json = JsonConvert.SerializeObject(new { Id = id, Name = file.FileName }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id, Name = file.FileName }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -1030,29 +1023,29 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> DownloadADUserCSVTemplate()
         {
             FileRepository.FileRepository fileRepository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
-            ResourcesRepository resourcesRepository = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository resourcesRepository = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             var stream = await resourcesRepository.DownloadWithLocalStorageAsync("AD_User_template.csv", Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Temp"));
             return new FileStreamResult(stream, System.Net.Mime.MediaTypeNames.Application.Octet) { FileDownloadName = "AD_User_template.csv" };
         }
 
 
         // Not used for the time being.
-/*        private void SaveDNSForwarders(string customerId, string baseId, string domainId, DNSAddViewModel dnsAdd)
-        {
-            var dbDomain = UnitOfWork.Domains.Get(domainId, "DNS");
-            dbDomain.DNS = new List<DATA.DNS>();
-            if (dnsAdd.Forwarders != null)
-            {
-                foreach (var dnsAddForwarder in dnsAdd.Forwarders)
+        /*        private void SaveDNSForwarders(string customerId, string baseId, string domainId, DNSAddViewModel dnsAdd)
                 {
-                    dbDomain.DNS.Add(new DATA.DNS() { Forwarder = dnsAddForwarder });
-                }
-            }
+                    var dbDomain = UnitOfWork.Domains.Get(domainId, "DNS");
+                    dbDomain.DNS = new List<DATA.DNS>();
+                    if (dnsAdd.Forwarders != null)
+                    {
+                        foreach (var dnsAddForwarder in dnsAdd.Forwarders)
+                        {
+                            dbDomain.DNS.Add(new DATA.DNS() { Forwarder = dnsAddForwarder });
+                        }
+                    }
 
-            UnitOfWork.Domains.MarkForUpdate(dbDomain, GetCurrentUser().Id);
-            UnitOfWork.SaveChanges();
-        }*/
+                    UnitOfWork.Domains.MarkForUpdate(dbDomain, GetCurrentUser().Id);
+                    UnitOfWork.SaveChanges();
+                }*/
 
         // Should be moved to Software, unused for the time being
         //private IActionResult SaveOffice365Configuration(string customerId, string baseId, string domainId,
@@ -1070,105 +1063,105 @@ namespace WPM_API.Controllers
         //    UnitOfWork.SaveChanges();
 
         //    // Serialize and return the response
-        //    var json = JsonConvert.SerializeObject(dbDomain, _serializerSettings);
+        //    var json = JsonConvert.SerializeObject(dbDomain, serializerSettings);
         //    return new OkObjectResult(json);
         //}
 
-/*        private void SaveGPOSettings(string customerId, string baseId, string domainId,
-            GroupPolicyObjectViewModel gpoAdd)
-        {
-            var dbDomain = UnitOfWork.Domains.Get(domainId, "Gpo");
-            dbDomain.Status = "Saving GPO Settings.";
-            var wallpaper = UnitOfWork.Files.GetByGuid(gpoAdd.Wallpaper.Id);
-            var lockscreen = UnitOfWork.Files.GetByGuid(gpoAdd.Lockscreen.Id);
-            dbDomain.Gpo.Wallpaper = wallpaper;
-            dbDomain.Gpo.Lockscreen = lockscreen;
-            dbDomain.Gpo.Settings = gpoAdd.Settings;
-            UnitOfWork.Domains.MarkForUpdate(dbDomain, GetCurrentUser().Id);
-            UnitOfWork.SaveChanges();
-        }*      
-
-        /*********************************** DomainUserController-Methods ******************************************/
-        // Not used ATM
-/*
-        public async Task<DATA.Domain> SaveDomainUsers(string customerId, string baseId, DATA.Domain domain)
-        {
-            //DomainFileRepository domainFileRepository = new DomainFileRepository(_connectionStrings.FileRepository, _appSettings.DomainFileRepositoryFolder);
-            DomainFileRepository domainFileRepository = new DomainFileRepository(_connectionStrings.FileRepository, _appSettings.DomainFileRepositoryFolder);
-            CloudBlockBlob blob = domainFileRepository.GetBlobFile(domain.DomainUserCSV.Guid);
-
-            Stream stream = await blob.OpenReadAsync();
-            List<DATA.DomainUser> users = new List<DATA.DomainUser>();
-            using (var csvStream = new StreamReader(stream))
-            {
-                var csvReader = ConfigureCsvReader(csvStream, true);
-                List<DATA.DomainUser> domainUsers = null;
-                using (var unitOfWork = CreateUnitOfWork())
+        /*        private void SaveGPOSettings(string customerId, string baseId, string domainId,
+                    GroupPolicyObjectViewModel gpoAdd)
                 {
-                    domainUsers = unitOfWork.DomainUser.GetAll().Where(x => x.DomainId == domain.Id).ToList();
+                    var dbDomain = UnitOfWork.Domains.Get(domainId, "Gpo");
+                    dbDomain.Status = "Saving GPO Settings.";
+                    var wallpaper = UnitOfWork.Files.GetByGuid(gpoAdd.Wallpaper.Id);
+                    var lockscreen = UnitOfWork.Files.GetByGuid(gpoAdd.Lockscreen.Id);
+                    dbDomain.Gpo.Wallpaper = wallpaper;
+                    dbDomain.Gpo.Lockscreen = lockscreen;
+                    dbDomain.Gpo.Settings = gpoAdd.Settings;
+                    UnitOfWork.Domains.MarkForUpdate(dbDomain, GetCurrentUser().Id);
+                    UnitOfWork.SaveChanges();
+                }*      
 
-                    while (csvReader.Read())
+                /*********************************** DomainUserController-Methods ******************************************/
+        // Not used ATM
+        /*
+                public async Task<DATA.Domain> SaveDomainUsers(string customerId, string baseId, DATA.Domain domain)
+                {
+                    //DomainFileRepository domainFileRepository = new DomainFileRepository(connectionStrings.FileRepository, appSettings.DomainFileRepositoryFolder);
+                    DomainFileRepository domainFileRepository = new DomainFileRepository(connectionStrings.FileRepository, appSettings.DomainFileRepositoryFolder);
+                    CloudBlockBlob blob = domainFileRepository.GetBlobFile(domain.DomainUserCSV.Guid);
+
+                    Stream stream = await blob.OpenReadAsync();
+                    List<DATA.DomainUser> users = new List<DATA.DomainUser>();
+                    using (var csvStream = new StreamReader(stream))
                     {
-                        DomainUserViewModel domainUserRecord = csvReader.GetRecord<DomainUserViewModel>();
-                        var oldUser = domainUsers.Find(x => x.SamAccountName == domainUserRecord.SamAccountName);
-                        if (oldUser != null)
+                        var csvReader = ConfigureCsvReader(csvStream, true);
+                        List<DATA.DomainUser> domainUsers = null;
+                        using (var unitOfWork = CreateUnitOfWork())
                         {
-                            Mapper.Map(domainUserRecord, oldUser);
-                            unitOfWork.DomainUser.MarkForUpdate(oldUser);
-                            users.Add(oldUser);
-                        }
-                        else
-                        {
-                            DATA.DomainUser newUser = new DATA.DomainUser();
-                            //Mapper.Map(domainUserRecord, newUser);
-                            newUser.Name = domainUserRecord.Name;
-                            newUser.UserGivenName = domainUserRecord.UserGivenName;
-                            newUser.UserLastName = domainUserRecord.UserLastName;
-                            newUser.SamAccountName = domainUserRecord.SamAccountName;
-                            newUser.UserPrincipalName = domainUserRecord.UserPrincipalName;
-                            newUser.MemberOf = domainUserRecord.MemberOf;
-                            newUser.Description = domainUserRecord.Description;
-                            newUser.Displayname = domainUserRecord.Displayname;
-                            newUser.Workphone = domainUserRecord.Workphone;
-                            newUser.Email = domainUserRecord.Email;
+                            domainUsers = unitOfWork.DomainUser.GetAll().Where(x => x.DomainId == domain.Id).ToList();
 
-                            newUser.DomainId = domain.Id;
-                            users.Add(newUser);
-                            unitOfWork.DomainUser.MarkForInsert(newUser);
+                            while (csvReader.Read())
+                            {
+                                DomainUserViewModel domainUserRecord = csvReader.GetRecord<DomainUserViewModel>();
+                                var oldUser = domainUsers.Find(x => x.SamAccountName == domainUserRecord.SamAccountName);
+                                if (oldUser != null)
+                                {
+                                    Mapper.Map(domainUserRecord, oldUser);
+                                    unitOfWork.DomainUser.MarkForUpdate(oldUser);
+                                    users.Add(oldUser);
+                                }
+                                else
+                                {
+                                    DATA.DomainUser newUser = new DATA.DomainUser();
+                                    //Mapper.Map(domainUserRecord, newUser);
+                                    newUser.Name = domainUserRecord.Name;
+                                    newUser.UserGivenName = domainUserRecord.UserGivenName;
+                                    newUser.UserLastName = domainUserRecord.UserLastName;
+                                    newUser.SamAccountName = domainUserRecord.SamAccountName;
+                                    newUser.UserPrincipalName = domainUserRecord.UserPrincipalName;
+                                    newUser.MemberOf = domainUserRecord.MemberOf;
+                                    newUser.Description = domainUserRecord.Description;
+                                    newUser.Displayname = domainUserRecord.Displayname;
+                                    newUser.Workphone = domainUserRecord.Workphone;
+                                    newUser.Email = domainUserRecord.Email;
+
+                                    newUser.DomainId = domain.Id;
+                                    users.Add(newUser);
+                                    unitOfWork.DomainUser.MarkForInsert(newUser);
+                                }
+                            }
+                            unitOfWork.SaveChanges();
                         }
                     }
-                    unitOfWork.SaveChanges();
+
+                    // Return something so that this method's execution can be awaited.
+                    return domain;
                 }
-            }
+        */
 
-            // Return something so that this method's execution can be awaited.
-            return domain;
-        }
-*/
+        /*        private CsvReader ConfigureCsvReader(StreamReader csvStream, bool hasHeader)
+                {
+                    CsvReader csvReader = new CsvReader(csvStream);
+                    csvReader.Configuration.MissingFieldFound = null;
+                    csvReader.Configuration.HasHeaderRecord = hasHeader;
+                    csvReader.Configuration.IgnoreQuotes = true;
+                    // Trim
+                    csvReader.Configuration.PrepareHeaderForMatch = header => header?.Trim();
 
-/*        private CsvReader ConfigureCsvReader(StreamReader csvStream, bool hasHeader)
-        {
-            CsvReader csvReader = new CsvReader(csvStream);
-            csvReader.Configuration.MissingFieldFound = null;
-            csvReader.Configuration.HasHeaderRecord = hasHeader;
-            csvReader.Configuration.IgnoreQuotes = true;
-            // Trim
-            csvReader.Configuration.PrepareHeaderForMatch = header => header?.Trim();
+                    // Remove whitespace
+                    csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace(" ", string.Empty);
 
-            // Remove whitespace
-            csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace(" ", string.Empty);
+                    // Remove underscores
+                    csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace("_", string.Empty);
 
-            // Remove underscores
-            csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace("_", string.Empty);
-
-            // Ignore case
-            csvReader.Configuration.PrepareHeaderForMatch = header => header.ToLower();
-            csvReader.Read();
-            if (hasHeader)
-            {
-                csvReader.ReadHeader();
-            }
-            return csvReader;
-        }*/
+                    // Ignore case
+                    csvReader.Configuration.PrepareHeaderForMatch = header => header.ToLower();
+                    csvReader.Read();
+                    if (hasHeader)
+                    {
+                        csvReader.ReadHeader();
+                    }
+                    return csvReader;
+                }*/
     }
 }

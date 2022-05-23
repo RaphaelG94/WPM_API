@@ -1,19 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using WPM_API.Common;
-using WPM_API.FileRepository;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using DATA = WPM_API.Data.DataContext.Entities;
-using System.IO;
-using WPM_API.Data.Models;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.Models;
+using WPM_API.Models;
 using WPM_API.Models.Release_Mgmt;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers
 {
@@ -21,6 +17,10 @@ namespace WPM_API.Controllers
     [Route("shop")]
     public class ShopItemController : BasisController
     {
+        public ShopItemController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         public IActionResult GetShopItems()
         {
@@ -51,7 +51,7 @@ namespace WPM_API.Controllers
                     ShopItemListView.Add(itemView);
                 }
             }
-            var json = JsonConvert.SerializeObject(ShopItemListView, _serializerSettings);
+            var json = JsonConvert.SerializeObject(ShopItemListView, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -87,9 +87,9 @@ namespace WPM_API.Controllers
                         result.Add(model);
                     }
                 }
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
-            }            
+            }
         }
 
         [HttpGet]
@@ -107,7 +107,7 @@ namespace WPM_API.Controllers
                 }
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<CategoryViewModel>>(alreadyPushed), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<CategoryViewModel>>(alreadyPushed), serializerSettings);
             return Ok(json);
         }
 
@@ -132,7 +132,7 @@ namespace WPM_API.Controllers
             shopItemView.bruttoPrice = ConvertToBruttoPrice(Convert.ToDouble(shopItem.Price)).ToString("N2");
             shopItemView.bruttoManagedServicePrice = ConvertToBruttoPrice(Convert.ToDouble(shopItem.ManagedServicePrice)).ToString("N2");
             shopItemView.bruttoManagedServiceLifecyclePrice = ConvertToBruttoPrice(Convert.ToDouble(shopItem.ManagedServiceLifecyclePrice)).ToString("N2");
-            var json = JsonConvert.SerializeObject(shopItemView, _serializerSettings);
+            var json = JsonConvert.SerializeObject(shopItemView, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -177,7 +177,7 @@ namespace WPM_API.Controllers
                 }
                 if (shopItem.Drivers != null)
                 {
-                    foreach(string driverId in shopItem.Drivers)
+                    foreach (string driverId in shopItem.Drivers)
                     {
                         Driver driver = unitOfWork.Drivers.GetOrNull(driverId, "DriverShopItems");
                         if (driver == null)
@@ -202,7 +202,7 @@ namespace WPM_API.Controllers
                 itemView.bruttoManagedServiceLifecyclePrice = ConvertToBruttoPrice(Convert.ToDouble(shopItem.ManagedServiceLifecyclePrice)).ToString("N2");
                 itemView.DriverShopItems = null;
                 itemView.Drivers = shopItem.Drivers;
-                var json = JsonConvert.SerializeObject(itemView, _serializerSettings);
+                var json = JsonConvert.SerializeObject(itemView, serializerSettings);
                 return new OkObjectResult(json);
             }
         }
@@ -211,9 +211,9 @@ namespace WPM_API.Controllers
         [Route("upload")]
         public async Task<IActionResult> UploadFileAsync([FromForm] IFormFile file)
         {
-            FileRepository.FileRepository shop = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository shop = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             string id = await shop.UploadFile(file.OpenReadStream());
-            var json = JsonConvert.SerializeObject(new { Id = id, Name = file.FileName }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id, Name = file.FileName }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -230,7 +230,7 @@ namespace WPM_API.Controllers
                 foreach (FileRefModel image in shopItemEdit.Images)
                 {
                     DATA.File tempFile = unitOfWork.Files.Get(image.Id);
-                    if (tempFile!=null)
+                    if (tempFile != null)
                     {
                         dbShopItem.Images.Add(tempFile);
                     }
@@ -316,7 +316,7 @@ namespace WPM_API.Controllers
             itemView.bruttoManagedServiceLifecyclePrice = ConvertToBruttoPrice(Convert.ToDouble(dbShopItem.ManagedServiceLifecyclePrice)).ToString();
             itemView.DriverShopItems = null;
             // ShopItem was changed and is returned.
-            var json = JsonConvert.SerializeObject(itemView, _serializerSettings);
+            var json = JsonConvert.SerializeObject(itemView, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -332,7 +332,7 @@ namespace WPM_API.Controllers
                 {
                     return new NotFoundResult();
                 }
-                FileRepository.FileRepository shop = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                FileRepository.FileRepository shop = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                 if (dbShopItem.Images != null)
                 {
                     foreach (Data.DataContext.Entities.File image in dbShopItem.Images)
@@ -358,7 +358,7 @@ namespace WPM_API.Controllers
         [Route("download/{fileId}")]
         public async Task<IActionResult> DownloadFileAsync([FromRoute] string fileId)
         {
-            FileRepository.FileRepository shop = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository shop = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             var file = UnitOfWork.Files.Get(fileId);
             var blob = shop.GetBlobFile(file.Guid);
             var ms = new MemoryStream();
@@ -371,14 +371,15 @@ namespace WPM_API.Controllers
         [Route("getOsImages")]
         public IActionResult GetOSImages()
         {
-            try 
+            try
             {
-                using (var unitOfWork = CreateUnitOfWork()) {
+                using (var unitOfWork = CreateUnitOfWork())
+                {
                     List<ImageShopViewModel> result = new List<ImageShopViewModel>();
                     List<Image> images = unitOfWork.Images.GetAll().ToList();
                     foreach (Image image in images)
                     {
-                        ImageStream stream = unitOfWork.ImageStreams.GetOrNull(image.ImageStreamId, "Icon");    
+                        ImageStream stream = unitOfWork.ImageStreams.GetOrNull(image.ImageStreamId, "Icon");
                         if (image.PublishInShop)
                         {
                             ImageShopViewModel si = new ImageShopViewModel();
@@ -387,14 +388,16 @@ namespace WPM_API.Controllers
                             if (image.BuildNr != null)
                             {
                                 si.BuildNr = image.BuildNr;
-                            } else
+                            }
+                            else
                             {
                                 si.BuildNr = "//";
                             }
                             if (stream.Edition != null)
                             {
                                 si.Edition = stream.Edition;
-                            } else
+                            }
+                            else
                             {
                                 si.Edition = "//";
                             }
@@ -406,7 +409,7 @@ namespace WPM_API.Controllers
                         }
                     }
 
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -418,14 +421,14 @@ namespace WPM_API.Controllers
 
         [HttpGet]
         [Route("getDrivers/{customerId}")]
-        public IActionResult GetDriversForShop ([FromRoute] string customerId)
+        public IActionResult GetDriversForShop([FromRoute] string customerId)
         {
             using (var unitOfWork = CreateUnitOfWork())
             {
                 List<Driver> drivers = unitOfWork.Drivers.GetAll().Where(x => x.PublishInShop).ToList();
                 List<CustomerDriver> customersDrivers = unitOfWork.CustomerDrivers.GetAll().Where(x => x.CustomerId == customerId).ToList();
                 List<Driver> toRemove = new List<Driver>();
-                foreach(Driver driver in drivers)
+                foreach (Driver driver in drivers)
                 {
                     if (customersDrivers.Find(x => x.DriverId == driver.Id) != null)
                     {
@@ -435,10 +438,10 @@ namespace WPM_API.Controllers
                 drivers = drivers.Except(toRemove).ToList();
                 List<DriverViewModel> result = Mapper.Map<List<DriverViewModel>>(drivers);
 
-                string json = JsonConvert.SerializeObject(result, _serializerSettings);
+                string json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
             }
-             
+
         }
     }
 

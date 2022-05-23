@@ -1,14 +1,12 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common.Utils;
 using WPM_API.Data.DataContext.Projections.Users;
 using WPM_API.Data.Infrastructure;
-using System.Linq;
-using WPM_API.Code.Infrastructure.LogOn;
 
 namespace WPM_API.Models.Account
 {
-    public class LogOnModel: ValidatableModelBase
+    public class LogOnModel : ValidatableModelBase
     {
         [Required]
         [Display(Name = "User name")]

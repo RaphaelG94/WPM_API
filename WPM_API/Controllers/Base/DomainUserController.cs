@@ -1,22 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using WPM_API.Azure;
-using WPM_API.Azure.Models;
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.DataRepository;
-using WPM_API.FileRepository;
-using WPM_API.Models;
-using CsvHelper;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Newtonsoft.Json;
-using File = WPM_API.Data.DataContext.Entities.File;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
@@ -37,7 +21,7 @@ namespace WPM_API.Controllers
         //        unitOfWork.SaveChanges();
         //    }
 
-        //    //DomainFileRepository domainFileRepository = new DomainFileRepository(_connectionStrings.FileRepository, _appSettings.DomainFileRepositoryFolder);
+        //    //DomainFileRepository domainFileRepository = new DomainFileRepository(connectionStrings.FileRepository, appSettings.DomainFileRepositoryFolder);
         //    CloudBlockBlob blob = tempRepository.GetBlobFile(file.Guid);
         //    await GenerateUsersFromCSV(blob, domainId, true);
         //    CreateUsersInAd(customerId, domainId, baseId, file.Guid);
@@ -68,11 +52,11 @@ namespace WPM_API.Controllers
         //        //string AzureStoragePath = "https://bitstream.blob.core.windows.net/scripts/";
         //        var credentialModel = new Azure.Models.StorageCredentialModel()
         //        {
-        //            ScriptAzureStoragePath = _appSettings.AzureStoragePath,
-        //            ScriptStorageAccountKey = _appSettings.StorageAccountKey,
-        //            ScriptStorageAccountName = _appSettings.StorageAccountName
+        //            ScriptAzureStoragePath = appSettings.AzureStoragePath,
+        //            ScriptStorageAccountKey = appSettings.StorageAccountKey,
+        //            ScriptStorageAccountName = appSettings.StorageAccountName
         //        };
-        //        string connectionString = _connectionStrings.FileRepository;
+        //        string connectionString = connectionStrings.FileRepository;
         //        await azure.VirtualMachineService().ExecuteVirtualMachineScriptAsync(virtualMachineRefModel, credentialModel, "ImportUser" + ".ps1", "-Path " + fileId, new StorageFileModel() { Name = fileId, Path = credentialModel.ScriptAzureStoragePath });
         //        //azure.VirtualMachineService().ExecuteVirtualMachineScriptAsync(virtualMachineRefModel, "ImportUser.ps1", "-Path " + fileId, new StorageFileModel() { Name = fileId, Path = AzureStoragePath });
         //    }
@@ -86,80 +70,83 @@ namespace WPM_API.Controllers
         /// CSV headers have to match Model, i.e. PascalCase.
         /// </summary>
         /// <returns>[CSVUploadUser]</returns>    
-    //    private async Task<List<DomainUser>> GenerateUsersFromCSV(CloudBlob file, string domainId, bool hasHeader)
-    //    {
-    //        Stream stream = await file.OpenReadAsync();
-    //        List<DomainUser> users = new List<DomainUser>();
-    //        using (var csvStream = new StreamReader(stream))
-    //        {
-    //            var csvReader = ConfigureCsvReader(csvStream, hasHeader);
-    //            List<DomainUser> domainUsers = null;
-    //            using (var unitOfWork = CreateUnitOfWork())
-    //            {
-    //                domainUsers = unitOfWork.DomainUser.GetAll().Where(x => x.DomainId == domainId).ToList();
+        //    private async Task<List<DomainUser>> GenerateUsersFromCSV(CloudBlob file, string domainId, bool hasHeader)
+        //    {
+        //        Stream stream = await file.OpenReadAsync();
+        //        List<DomainUser> users = new List<DomainUser>();
+        //        using (var csvStream = new StreamReader(stream))
+        //        {
+        //            var csvReader = ConfigureCsvReader(csvStream, hasHeader);
+        //            List<DomainUser> domainUsers = null;
+        //            using (var unitOfWork = CreateUnitOfWork())
+        //            {
+        //                domainUsers = unitOfWork.DomainUser.GetAll().Where(x => x.DomainId == domainId).ToList();
 
-    //                while (csvReader.Read())
-    //                {
-    //                    DomainUserViewModel domainUserRecord = csvReader.GetRecord<DomainUserViewModel>();
-    //                    var oldUser = domainUsers.Find(x => x.SamAccountName == domainUserRecord.SamAccountName);
-    //                    if (oldUser != null)
-    //                    {
-    //                        Mapper.Map(domainUserRecord, oldUser);
-    //                        unitOfWork.DomainUser.MarkForUpdate(oldUser);
-    //                        users.Add(oldUser);
-    //                    }
-    //                    else
-    //                    {
-    //                        DomainUser newUser = new DomainUser();
-    //                        //Mapper.Map(domainUserRecord, newUser);
-    //                        newUser.Name = domainUserRecord.Name;
-    //                        newUser.UserGivenName = domainUserRecord.UserGivenName;
-    //                        newUser.UserLastName = domainUserRecord.UserLastName;
-    //                        newUser.SamAccountName = domainUserRecord.SamAccountName;
-    //                        newUser.UserPrincipalName = domainUserRecord.UserPrincipalName;
-    //                        newUser.MemberOf = domainUserRecord.MemberOf;
-    //                        newUser.Description = domainUserRecord.Description;
-    //                        newUser.Displayname = domainUserRecord.Displayname;
-    //                        newUser.Workphone = domainUserRecord.Workphone;
-    //                        newUser.Email = domainUserRecord.Email;
+        //                while (csvReader.Read())
+        //                {
+        //                    DomainUserViewModel domainUserRecord = csvReader.GetRecord<DomainUserViewModel>();
+        //                    var oldUser = domainUsers.Find(x => x.SamAccountName == domainUserRecord.SamAccountName);
+        //                    if (oldUser != null)
+        //                    {
+        //                        Mapper.Map(domainUserRecord, oldUser);
+        //                        unitOfWork.DomainUser.MarkForUpdate(oldUser);
+        //                        users.Add(oldUser);
+        //                    }
+        //                    else
+        //                    {
+        //                        DomainUser newUser = new DomainUser();
+        //                        //Mapper.Map(domainUserRecord, newUser);
+        //                        newUser.Name = domainUserRecord.Name;
+        //                        newUser.UserGivenName = domainUserRecord.UserGivenName;
+        //                        newUser.UserLastName = domainUserRecord.UserLastName;
+        //                        newUser.SamAccountName = domainUserRecord.SamAccountName;
+        //                        newUser.UserPrincipalName = domainUserRecord.UserPrincipalName;
+        //                        newUser.MemberOf = domainUserRecord.MemberOf;
+        //                        newUser.Description = domainUserRecord.Description;
+        //                        newUser.Displayname = domainUserRecord.Displayname;
+        //                        newUser.Workphone = domainUserRecord.Workphone;
+        //                        newUser.Email = domainUserRecord.Email;
 
-    //                        newUser.DomainId = domainId;
-    //                        users.Add(newUser);
-    //                        unitOfWork.DomainUser.MarkForInsert(newUser);
-    //                    }
-    //                    unitOfWork.SaveChanges();
-    //                }
-    //            }
-    //        }
+        //                        newUser.DomainId = domainId;
+        //                        users.Add(newUser);
+        //                        unitOfWork.DomainUser.MarkForInsert(newUser);
+        //                    }
+        //                    unitOfWork.SaveChanges();
+        //                }
+        //            }
+        //        }
 
-    //        return users;
-    //        //var json = JsonConvert.SerializeObject(Mapper.Map<List<DomainUser>>(users), _serializerSettings);
-    //        //return new OkObjectResult(json);
-    //    }
+        //        return users;
+        //        //var json = JsonConvert.SerializeObject(Mapper.Map<List<DomainUser>>(users), serializerSettings);
+        //        //return new OkObjectResult(json);
+        //    }
 
-    //    private CsvReader ConfigureCsvReader(StreamReader csvStream, bool hasHeader)
-    //    {
-    //        CsvReader csvReader = new CsvReader(csvStream);
-    //        csvReader.Configuration.MissingFieldFound = null;
-    //        csvReader.Configuration.HasHeaderRecord = hasHeader;
-    //        csvReader.Configuration.IgnoreQuotes = true;
-    //        // Trim
-    //        csvReader.Configuration.PrepareHeaderForMatch = header => header?.Trim();
+        //    private CsvReader ConfigureCsvReader(StreamReader csvStream, bool hasHeader)
+        //    {
+        //        CsvReader csvReader = new CsvReader(csvStream);
+        //        csvReader.Configuration.MissingFieldFound = null;
+        //        csvReader.Configuration.HasHeaderRecord = hasHeader;
+        //        csvReader.Configuration.IgnoreQuotes = true;
+        //        // Trim
+        //        csvReader.Configuration.PrepareHeaderForMatch = header => header?.Trim();
 
-    //        // Remove whitespace
-    //        csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace(" ", string.Empty);
+        //        // Remove whitespace
+        //        csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace(" ", string.Empty);
 
-    //        // Remove underscores
-    //        csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace("_", string.Empty);
+        //        // Remove underscores
+        //        csvReader.Configuration.PrepareHeaderForMatch = header => header.Replace("_", string.Empty);
 
-    //        // Ignore case
-    //        csvReader.Configuration.PrepareHeaderForMatch = header => header.ToLower();
-    //        csvReader.Read();
-    //        if (hasHeader)
-    //        {
-    //            csvReader.ReadHeader();
-    //        }
-    //        return csvReader;
-    //    }
+        //        // Ignore case
+        //        csvReader.Configuration.PrepareHeaderForMatch = header => header.ToLower();
+        //        csvReader.Read();
+        //        if (hasHeader)
+        //        {
+        //            csvReader.ReadHeader();
+        //        }
+        //        return csvReader;
+        //    }
+        public DomainUserController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
     }
 }

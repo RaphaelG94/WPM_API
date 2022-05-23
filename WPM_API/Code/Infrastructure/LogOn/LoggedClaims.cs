@@ -11,7 +11,7 @@ namespace WPM_API.Code.Infrastructure.LogOn
 {
     public class LoggedClaims
     {
-        protected JsonSerializerSettings _serializerSettings => new JsonSerializerSettings { Formatting = Formatting.None, ContractResolver = new CamelCasePropertyNamesContractResolver() };
+        protected JsonSerializerSettings serializerSettings => new JsonSerializerSettings { Formatting = Formatting.None, ContractResolver = new CamelCasePropertyNamesContractResolver() };
         public string UserId { get; }
         public string Login { get; }
         public string Name { get; }
@@ -37,11 +37,11 @@ namespace WPM_API.Code.Infrastructure.LogOn
             Roles = roles;//.Where(r => r != Common.Constants.Roles.Admin);
             if (!string.IsNullOrEmpty(customerId))
             {
-                Customer = JsonConvert.SerializeObject(new { Id = customerId, Name = customerName }, _serializerSettings);
+                Customer = JsonConvert.SerializeObject(new { Id = customerId, Name = customerName }, serializerSettings);
             }
             if (!string.IsNullOrEmpty(systemhouseId))
             {
-                Systemhouse = JsonConvert.SerializeObject(new { Id = systemhouseId, Name = systemhouseName }, _serializerSettings);
+                Systemhouse = JsonConvert.SerializeObject(new { Id = systemhouseId, Name = systemhouseName }, serializerSettings);
             }
             GeneratedDateTicks = DateTime.UtcNow.Ticks;
         }

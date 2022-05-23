@@ -1,22 +1,24 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using WPM_API.Common;
-using WPM_API.Azure;
-using WPM_API.Models;
-using WPM_API.Data.DataContext.Entities;
 using Newtonsoft.Json;
-using AZURE = Microsoft.Azure.Management.ResourceManager.Models;
-using System.Web;
+using WPM_API.Azure;
 using WPM_API.Azure.Core;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
+using AZURE = Microsoft.Azure.Management.ResourceManager.Models;
 
 namespace WPM_API.Controllers.Base
 {
     [Route("customers/{customerId}")]
     public class SubscriptionController : BasisController
     {
+        public SubscriptionController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
 
         /// <summary>
         /// Retrieve all subscriptions of the customer.
@@ -70,7 +72,7 @@ namespace WPM_API.Controllers.Base
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(response, _serializerSettings);
+            var json = JsonConvert.SerializeObject(response, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -83,7 +85,7 @@ namespace WPM_API.Controllers.Base
             List<SubscriptionViewModel> response = new List<SubscriptionViewModel>();
 
             // TODO: Fix for live system
-            azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+            azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
             SubscriptionService subService = azure.SubscriptionService();
 
             List<AZURE.Subscription> subscriptions = await (azure.SubscriptionService()).GetSubscriptions();
@@ -98,7 +100,7 @@ namespace WPM_API.Controllers.Base
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(response, _serializerSettings);
+            var json = JsonConvert.SerializeObject(response, serializerSettings);
             return new OkObjectResult(json);
         }
     }

@@ -1,10 +1,8 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class NotificationEmail : IEntity
     {
@@ -42,6 +40,6 @@ namespace  WPM_API.Data.DataContext.Entities
 
         public virtual Scheduler Scheduler { get; set; }
         public virtual ICollection<NotificationEmailAttachment> NotificationEmailAttachments { get; set; }
-        
+
     }
 }

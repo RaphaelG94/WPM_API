@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
+using WPM_API.Common.Extensions;
 using WPM_API.Common.Utils;
 using WPM_API.Data.Infrastructure;
-using WPM_API.Code.Infrastructure.LogOn;
-using WPM_API.Common.Extensions;
 
 namespace WPM_API.Models.Account
 {

@@ -1,20 +1,16 @@
-﻿using WPM_API.Azure;
-using WPM_API.Common;
-using WPM_API.Data.Models;
-using WPM_API.FileRepository;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.Models;
+using WPM_API.Models;
+using WPM_API.Options;
 using AZURE = WPM_API.Azure.Models;
 using DATA = WPM_API.Data.DataContext.Entities;
 
@@ -26,6 +22,10 @@ namespace WPM_API.Controllers.Base
     [Route("customers/{customerId}/bases")]
     public class BaseController : BasisController
     {
+        public BaseController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Retrieve all bases without details.
         /// </summary>
@@ -44,7 +44,7 @@ namespace WPM_API.Controllers.Base
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(bases, _serializerSettings);
+            var json = JsonConvert.SerializeObject(bases, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -80,7 +80,8 @@ namespace WPM_API.Controllers.Base
 
                     AzureCommunicationService azure = new AzureCommunicationService(cep.TenantId, cep.ClientId, cep.ClientSecret);
                     var resGrpExists = azure.ResourceGroupService().GetRessourceGroupByName(toDelete.ResourceGroup.Name, toDelete.Subscription.AzureId);
-                    if (resGrpExists) {
+                    if (resGrpExists)
+                    {
                         var success = await azure.ResourceGroupService().DeleteRessourceGroupAsync(toDelete.Subscription.AzureId, toDelete.ResourceGroup.Name);
                     }
 
@@ -102,7 +103,8 @@ namespace WPM_API.Controllers.Base
                     unitOfWork.SaveChanges();
                     return Ok();
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -118,7 +120,8 @@ namespace WPM_API.Controllers.Base
         [Authorize(Policy = Constants.Roles.Customer)]
         public async Task<IActionResult> AddBase([FromRoute] string customerId, [FromBody] BaseAddViewModel baseAdd)
         {
-            using (var unitOfWork = CreateUnitOfWork()) {
+            using (var unitOfWork = CreateUnitOfWork())
+            {
                 BaseViewModel baseModel = new BaseViewModel();
                 DATA.Base newEntry = Mapper.Map<BaseAddViewModel, DATA.Base>(baseAdd);
                 newEntry.BaseStatus = new DATA.BaseStatus();
@@ -168,12 +171,12 @@ namespace WPM_API.Controllers.Base
 
                 // Serialize and return the response
                 baseModel = Mapper.Map<DATA.Base, BaseViewModel>(newEntry);
-                var json = JsonConvert.SerializeObject(baseModel, _serializerSettings);
+                var json = JsonConvert.SerializeObject(baseModel, serializerSettings);
                 return new OkObjectResult(json);
             }
         }
 
-        private async Task CreateResourceGrp (DATA.Customer customer, string baseId, VirtualNetworkAddViewModel VirtualNetwork)
+        private async Task CreateResourceGrp(DATA.Customer customer, string baseId, VirtualNetworkAddViewModel VirtualNetwork)
         {
             using (var unitOfWork = CreateUnitOfWork())
             {
@@ -233,7 +236,7 @@ namespace WPM_API.Controllers.Base
                     vnModel.Subnets = new List<AZURE.SubnetViewModel>();
                     foreach (SubnetViewModel subnet in VirtualNetwork.Subnets)
                     {
-                        vnModel.Subnets.Add(new AZURE.SubnetViewModel() {Name = subnet.Name, AddressRange = subnet.AddressRange});
+                        vnModel.Subnets.Add(new AZURE.SubnetViewModel() { Name = subnet.Name, AddressRange = subnet.AddressRange });
                     }
                     var virtualNetwork = await azure.VirtualNetworkService().AddOrModifyVirtualNetworkAsync(toEdit.Subscription.AzureId, toEdit.ResourceGroup.Name, vnModel, toEdit.ResourceGroup.Location);
                     toEdit.VirtualNetwork.AzureId = virtualNetwork.Id;
@@ -338,7 +341,8 @@ namespace WPM_API.Controllers.Base
                 catch (Exception e)
                 {
                     toEdit.Status = "ERROR: " + e.Message;
-                    if (toEdit.BaseStatus.VPNStatus != "Created") {
+                    if (toEdit.BaseStatus.VPNStatus != "Created")
+                    {
                         toEdit.BaseStatus.VPNStatus = "Error";
                     }
                     toEdit.BaseStatus.Status = "Error";
@@ -370,7 +374,7 @@ namespace WPM_API.Controllers.Base
             result.VPNStatus = toFetch.BaseStatus.VPNStatus;
             result.ErrorMessage = toFetch.BaseStatus.ErrorMessage;
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -414,7 +418,7 @@ namespace WPM_API.Controllers.Base
             baseViewModel.CreationUser = UnitOfWork.Users.GetAccountById(dbBase.CreatedByUserId).UserName;
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(baseViewModel, _serializerSettings);
+            var json = JsonConvert.SerializeObject(baseViewModel, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -434,7 +438,7 @@ namespace WPM_API.Controllers.Base
             fwConfigs.Add(new FirewallConfigViewModel() { Id = "2", FirmwareVersion = "10.30", Model = "Lancom 1781AW" });
             fwConfigs.Add(new FirewallConfigViewModel() { Id = "3", FirmwareVersion = "5.04", Model = "Fortigate60E PXEPi" });
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(fwConfigs, _serializerSettings);
+            var json = JsonConvert.SerializeObject(fwConfigs, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -559,14 +563,14 @@ namespace WPM_API.Controllers.Base
 
                 AdvancedPropertyViewModel result = Mapper.Map<AdvancedPropertyViewModel>(property);
                 result.Category = new CategoryViewModel() { Name = property.Category.Name, Id = property.Category.Id };
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return new OkObjectResult(json);
             }
         }
 
         private async Task CreateBaseAsync(string customerId, string baseId)
         {
-            DATA.Base baseAdd = UnitOfWork.Bases.Get(baseId, "VirtualMachines", "VirtualMachines.Disks", "Subscription", "ResourceGroup", "VirtualNetwork", "VirtualNetwork.Subnets","StorageAccount", "Vpn");
+            DATA.Base baseAdd = UnitOfWork.Bases.Get(baseId, "VirtualMachines", "VirtualMachines.Disks", "Subscription", "ResourceGroup", "VirtualNetwork", "VirtualNetwork.Subnets", "StorageAccount", "Vpn");
             DATA.CloudEntryPoint credentials = GetCEP(customerId);
             AzureCommunicationService azure = new AzureCommunicationService(credentials.TenantId, credentials.ClientId, credentials.ClientSecret);
             try
@@ -618,7 +622,7 @@ namespace WPM_API.Controllers.Base
 
                     // Create Storage Account
                     string storageAccountId = String.Empty;
-                    
+
                     var checkStorageAccount = await azure.StorageService().CheckNameAvailabilityAsync(baseAdd.StorageAccount.Name);
                     if (checkStorageAccount.IsAvailable == true)
                     {
@@ -648,7 +652,7 @@ namespace WPM_API.Controllers.Base
                             return;
                         }
                     }
-                    
+
 
                     string virtualNetworkId = (await virtualNetwork).Id;
                     baseAdd.VirtualNetwork.AzureId = virtualNetworkId;
@@ -659,8 +663,8 @@ namespace WPM_API.Controllers.Base
                     unitOfWork.SaveChanges();
 
                     awaitables.Add(AddVpnAsync(azure, baseId, customerId, subscriptionId, resourceGroupName, virtualNetworkId));
-                    
-                    FileRepository.FileRepository tempRepository = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+
+                    FileRepository.FileRepository tempRepository = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                     Task.WaitAll(awaitables.ToArray());
 
                     // Fill StorageAccountId after awaitables have been executed.
@@ -805,7 +809,7 @@ namespace WPM_API.Controllers.Base
                 }
             }
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
     }

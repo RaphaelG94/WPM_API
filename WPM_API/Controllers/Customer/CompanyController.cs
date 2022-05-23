@@ -1,19 +1,23 @@
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.Models;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     [Route("companies")]
     public class CompanyController : BasisController
     {
+        public CompanyController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Create a new company with it's headquarter and (optionally) it's expert
         /// </summary>
@@ -40,11 +44,12 @@ namespace WPM_API.Controllers
             }
             catch (Exception exc)
             {
-               // Company does not get any HQ. Needed for adding companies in nested dialogs (e.g: Customer -> Settings -> Add Location)                   
+                // Company does not get any HQ. Needed for adding companies in nested dialogs (e.g: Customer -> Settings -> Add Location)                   
             }
 
             Person expert = null;
-            try {
+            try
+            {
                 expert = UnitOfWork.Persons.Get(companyAdd.ExpertId);
                 company.ExpertId = companyAdd.ExpertId;
                 company.Employees = new List<Person>();
@@ -52,9 +57,9 @@ namespace WPM_API.Controllers
             }
             catch (Exception exc)
             {
-               // Company does not get any expert.
+                // Company does not get any expert.
             }
-            
+
             try
             {
                 UnitOfWork.SaveChanges();
@@ -87,7 +92,7 @@ namespace WPM_API.Controllers
             }
 
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(company), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(company), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -142,7 +147,7 @@ namespace WPM_API.Controllers
                 return BadRequest("The company could not be deleted. " + exc.Message);
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(toDelete), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(toDelete), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -164,7 +169,7 @@ namespace WPM_API.Controllers
             companies = Mapper.Map<List<Company>, List<CompanyOverviewViewModel>>(dbEntries);
 
             // Serialize and return result
-            var json = JsonConvert.SerializeObject(companies, _serializerSettings);
+            var json = JsonConvert.SerializeObject(companies, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -198,7 +203,7 @@ namespace WPM_API.Controllers
             // Add headquarter to company and customer
             headquarter.CustomerId = company.CustomerId;
             headquarter.CompanyId = companyId;
-            customer.Locations.Add(headquarter);
+            // customer.Locations.Add(headquarter);
             company.HeadquarterId = headquarter.Id;
             company.Locations.Add(headquarter);
 
@@ -213,7 +218,7 @@ namespace WPM_API.Controllers
             }
 
             // Serialize & return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<Location, LocationViewModel>(headquarter), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Location, LocationViewModel>(headquarter), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -262,7 +267,7 @@ namespace WPM_API.Controllers
             }
 
             // Serialize & return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(expert), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Person, PersonViewModel>(expert), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -283,7 +288,8 @@ namespace WPM_API.Controllers
             mainCompany.Description = updateData.Description;
             mainCompany.Type = updateData.Type;
 
-            if (updateData.ExpertId != null && updateData.ExpertId != "") {
+            if (updateData.ExpertId != null && updateData.ExpertId != "")
+            {
                 mainCompany.ExpertId = updateData.ExpertId;
                 // Load Expert & set company
                 Person expert = UnitOfWork.Persons.Get(mainCompany.ExpertId);
@@ -307,7 +313,7 @@ namespace WPM_API.Controllers
             }
 
             // Serialize and return the result
-            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyOverviewViewModel>(mainCompany), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyOverviewViewModel>(mainCompany), serializerSettings);
             return new OkObjectResult(json);
         }
     }

@@ -1,33 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
+﻿using Azure.Storage.Blobs.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System.Net;
 using System.Net.Mail;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-using Azure.Storage.Blobs.Models;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
 using WPM_API.Common.Utils;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.Models;
 using WPM_API.FileRepository;
-using WPM_API.TransferModels;
 using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Newtonsoft.Json;
-using static WPM_API.Controllers.ConnectController;
+using WPM_API.Options;
+using WPM_API.TransferModels;
 using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers.Client
 {
     [Route("agent")]
     public class AgentController : BasisController
-    {        
+    {
+        public AgentController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPut]
         [AllowAnonymous]
         [Route("{Token}/AddClient")]
@@ -189,7 +188,7 @@ namespace WPM_API.Controllers.Client
                 {
                     fetchedClient = fittingClientes.First();
                 }
-              
+
                 DATA.Customer customer = unitOfWork.Customers.GetAll().Where(x => x.Name == data.CustomerName).FirstOrDefault();
                 if (fetchedClient != null)
                 {
@@ -231,7 +230,7 @@ namespace WPM_API.Controllers.Client
                     {
                         return BadRequest("ERROR: The client already exists");
                     }
-                } 
+                }
 
                 DATA.Client newClient = new DATA.Client() { Description = data.Description, Name = data.Name, UUID = data.uuid, CustomerId = customer.Id };
                 newClient.Model = data.Model;
@@ -255,9 +254,9 @@ namespace WPM_API.Controllers.Client
                 var FixedParams = GenerateFixedClientParams(newClient);
                 foreach (var param in FixedParams)
                 {
-                   param.ClientId = newClient.Id;
-                   param.Client = newClient;
-                   unitOfWork.ClientParameters.MarkForInsert(param);
+                    param.ClientId = newClient.Id;
+                    param.Client = newClient;
+                    unitOfWork.ClientParameters.MarkForInsert(param);
                 }
                 unitOfWork.SaveChanges();
                 return Ok();
@@ -382,7 +381,7 @@ namespace WPM_API.Controllers.Client
         {
             try
             {
-                ResourcesRepository agent = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+                ResourcesRepository agent = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
                 string sasUri = agent.GetSASFile("WinPEv14.iso", false);
                 if (sasUri == null)
                 {
@@ -411,7 +410,7 @@ namespace WPM_API.Controllers.Client
             var Client = UnitOfWork.Clients.GetByUuid(UUID);
             if (Client.Unattend == null)
                 return new NotFoundResult();
-            FileRepository.FileRepository unattends = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository unattends = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             var downloadStream = await unattends.DownloadWithLocalStorageAsync(Client.Unattend, Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Temp"));
             downloadStream.Seek(0, SeekOrigin.Begin);
             return File(downloadStream, System.Net.Mime.MediaTypeNames.Application.Octet, "unattend.xml");
@@ -422,7 +421,7 @@ namespace WPM_API.Controllers.Client
         [Route("downloads/unattend")]
         public async Task<IActionResult> DownloadUnattend()
         {
-            ResourcesRepository agent = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository agent = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             var stream = await agent.DownloadWithLocalStorageAsync("unattend.xml", Path.Combine(Directory.GetCurrentDirectory(), "Resources", "Temp"));
             stream.Seek(0, SeekOrigin.Begin);
             return File(stream, System.Net.Mime.MediaTypeNames.Application.Octet, "unattend.xml");
@@ -433,7 +432,7 @@ namespace WPM_API.Controllers.Client
         [Route("downloads/firstagent")]
         public async Task<IActionResult> DownloadFirstAgent()
         {
-            ResourcesRepository agent = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository agent = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             var stream = await agent.DownloadWithLocalStorageAsync("FirstAgent.exe", Directory.GetCurrentDirectory());
             stream.Seek(0, SeekOrigin.Begin);
             return File(stream, System.Net.Mime.MediaTypeNames.Application.Octet, "FirstAgent.exe");
@@ -462,10 +461,10 @@ namespace WPM_API.Controllers.Client
             }
             try
             {
-                SmtpClient client = new SmtpClient(_agentEmailOptions.Host, _agentEmailOptions.Port);
-                NetworkCredential data = new NetworkCredential(_agentEmailOptions.Email, _agentEmailOptions.Password);
+                SmtpClient client = new SmtpClient(agentEmailOptions.Host, agentEmailOptions.Port);
+                NetworkCredential data = new NetworkCredential(agentEmailOptions.Email, agentEmailOptions.Password);
                 client.Credentials = data;
-                MailAddress from = new MailAddress(_agentEmailOptions.Email, _agentEmailOptions.DisplayName);
+                MailAddress from = new MailAddress(agentEmailOptions.Email, agentEmailOptions.DisplayName);
                 MailAddress to = new MailAddress((emailFields.CompMail).Trim());
                 MailMessage message = new MailMessage(from, to);
                 message.Body = new StringBuilder("Dear Customer,</br></br>we would like to notify you that a new client has been registred under your Systemhouse.</br></br></br><u>Determined Data : " +
@@ -486,10 +485,10 @@ namespace WPM_API.Controllers.Client
 
             try
             {
-                SmtpClient client = new SmtpClient(_agentEmailOptions.Host, _agentEmailOptions.Port);
-                NetworkCredential data = new NetworkCredential(_agentEmailOptions.Email, _agentEmailOptions.Password);
+                SmtpClient client = new SmtpClient(agentEmailOptions.Host, agentEmailOptions.Port);
+                NetworkCredential data = new NetworkCredential(agentEmailOptions.Email, agentEmailOptions.Password);
                 client.Credentials = data;
-                MailAddress from = new MailAddress(_agentEmailOptions.Email, _agentEmailOptions.DisplayName);
+                MailAddress from = new MailAddress(agentEmailOptions.Email, agentEmailOptions.DisplayName);
                 MailAddress to = new MailAddress((emailFields.UserMail).Trim());
                 MailMessage message = new MailMessage(from, to);
                 message.Body = new StringBuilder("Dear Customer,</br></br>we have notified " + emailFields.ITDep + ".</br></br></br><u>Determined Data : " +
@@ -527,7 +526,7 @@ namespace WPM_API.Controllers.Client
         [Route("downloads/installagent")]
         public async Task<IActionResult> DownloadInstallAgent()
         {
-            ResourcesRepository agent = new ResourcesRepository(_connectionStrings.FileRepository, _appSettings.ResourcesRepositoryFolder);
+            ResourcesRepository agent = new ResourcesRepository(connectionStrings.FileRepository, appSettings.ResourcesRepositoryFolder);
             var stream = await agent.DownloadWithLocalStorageAsync("InstallAgent.exe", Directory.GetCurrentDirectory());
             stream.Seek(0, SeekOrigin.Begin);
             return File(stream, System.Net.Mime.MediaTypeNames.Application.Octet, "InstallAgent.exe");
@@ -614,27 +613,28 @@ namespace WPM_API.Controllers.Client
                                     }
                                 }
                             }
-                        }                                                                                                       
+                        }
                     }
                     if (opt != null)
                     {
                         opt = unitOfWork.ClientOptions.Get(opt.Id, "Parameters");
-                    } else
+                    }
+                    else
                     {
                         return BadRequest("There is not suitable Option assigned to run");
                     }
                     ScriptVersion version = unitOfWork.ScriptVersions.Get(opt.DeviceOptionId);
-                    
+
                     DATA.ExecutionLog executionLog = new DATA.ExecutionLog() { ClientId = fetchedClient.Id, ExecutionDate = DateTime.Now, ScriptVersionId = opt.DeviceOptionId, ScriptVersion = version, Client = fetchedClient, Script = opt.DeviceOption.ContentUrl, ScriptArguments = new List<DATA.Parameter>() };
                     unitOfWork.Logs.MarkForInsert(executionLog);
-                   
+
                     fetchedClient.AssignedOptions.Remove(opt);
                     unitOfWork.Clients.MarkForUpdate(fetchedClient, fetchedClient.Id);
                     unitOfWork.SaveChanges();
                     ParameterStringViewModel parameters = new ParameterStringViewModel();
                     parameters.ParameterList = new List<ParameterViewModel>();
                     var paramString = "";
-                    
+
                     // List<Parameter> parameters = unitOfWork.Parameters.GetAll().Where(x => x.)
                     opt.Parameters.ForEach(x => paramString += AssignParameter(x));
                     opt.Parameters.ForEach(x => parameters.ParameterList.Add(Mapper.Map<ParameterViewModel>(x)));
@@ -643,10 +643,11 @@ namespace WPM_API.Controllers.Client
                     parameters.OptionId = opt.DeviceOption.Id;
                     //            return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, opt.DeviceOption.ContentUrl);
                     //            var json = JsonConvert.SerializeObject(Mapper.Map<DATA.ClientOption, OptionAssignRefViewModel>(opt),
-                    //                _serializerSettings);
+                    //                serializerSettings);
                     return new OkObjectResult(parameters);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message + " " + e.InnerException.Message);
             }
@@ -663,7 +664,7 @@ namespace WPM_API.Controllers.Client
                 {
                     return BadRequest("ERROR: The data to identify the client is missing");
                 }
-                using (var unitOfWork  =CreateUnitOfWork())
+                using (var unitOfWork = CreateUnitOfWork())
                 {
                     // DATA.Client client = UnitOfWork.Clients.GetByUuid(UUID, ClientIncludes.ClientOptions, ClientIncludes.ClientOptionsDeviceOption, ClientIncludes.ClientOptionsParameters);
                     DATA.Client fetchedClient = null;
@@ -738,18 +739,18 @@ namespace WPM_API.Controllers.Client
                     unitOfWork.SaveChanges();
 
                     // TODO: set Parameter with saved values from DB
-                    FileRepository.FileRepository fileRepository = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                    FileRepository.FileRepository fileRepository = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                     var blob = fileRepository.GetBlobFile(version.ContentUrl);
 
-                    BlobDownloadResult dlResult =  await blob.DownloadContentAsync();
+                    BlobDownloadResult dlResult = await blob.DownloadContentAsync();
                     string content = dlResult.Content.ToString();
-                    
+
                     // Set parameters
                     StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < opt.Parameters.Count; i++)
                     {
-                        var param = opt.Parameters[i];                        
-                        sb.AppendLine(param.Key + "=" + "\"" + param.Value + "\"");                        
+                        var param = opt.Parameters[i];
+                        sb.AppendLine(param.Key + "=" + "\"" + param.Value + "\"");
                     }
 
                     int startIndex = content.IndexOf("###param(");
@@ -769,10 +770,11 @@ namespace WPM_API.Controllers.Client
                     result.ScriptName.Replace(" ", "_");
                     result.ScriptContent = content;
 
-                    string json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    string json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -792,7 +794,7 @@ namespace WPM_API.Controllers.Client
             try
             {
                 var opt = UnitOfWork.ScriptVersions.Get(deviceOptionId);
-                FileRepository.FileRepository fileRepository = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                FileRepository.FileRepository fileRepository = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
 
                 var ms = new MemoryStream();
                 var blob = fileRepository.GetBlobFile(opt.ContentUrl);
@@ -820,7 +822,8 @@ namespace WPM_API.Controllers.Client
                 using (var unitOfWork = CreateUnitOfWork())
                 {
                     swPackages = new List<CustomerSoftware>();
-                    if (data != null && data.UUID != null) {
+                    if (data != null && data.UUID != null)
+                    {
                         DATA.Client fetchedClient = null;
                         List<DATA.Client> fetchedClients = unitOfWork.Clients.GetAll(ClientIncludes.GetAllIncludes()).Where(x => x.UUID == data.UUID && x.SerialNumber == data.SerialNumber).ToList();
                         var fittingClientes = new List<DATA.Client>();
@@ -851,7 +854,7 @@ namespace WPM_API.Controllers.Client
                         {
                             fetchedClient = fittingClientes.First();
                         }
-                        
+
                         if (fetchedClient == null || fetchedClient.Customer == null)
                         {
                             return BadRequest("ERROR: The client is not registered yet!");
@@ -897,25 +900,29 @@ namespace WPM_API.Controllers.Client
                         }
 
                         return Ok(JsonConvert.SerializeObject(swPackages));
-                    } else
+                    }
+                    else
                     {
                         return BadRequest("ERROR: The request payload is corrupt");
                     }
-                    
+
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message + e.InnerException);
             }
-            
+
             // return JsonConvert.SerializeObject(null);
         }
 
         private string AssignParameter(Parameter parameter)
         {
-            if (parameter.Value.Equals("$true") || parameter.Value.Equals("$false") || parameter.Value.Equals("$null")) {
+            if (parameter.Value.Equals("$true") || parameter.Value.Equals("$false") || parameter.Value.Equals("$null"))
+            {
                 return " -" + parameter.Key.Substring(1).Trim() + " " + parameter.Value + "";
-            } else
+            }
+            else
             {
                 return " -" + parameter.Key.Substring(1).Trim() + " \"\"\"" + parameter.Value + "\"\"\"";
             }
@@ -923,7 +930,7 @@ namespace WPM_API.Controllers.Client
 
         public class UUIDViewModel : AgentsAuthenticationModel
         {
-            public string UUID { get; set; }            
+            public string UUID { get; set; }
         }
     }
 }

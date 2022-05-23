@@ -1,14 +1,13 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.TransferModels.SmartDeploy;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
+using WPM_API.TransferModels.SmartDeploy;
 using File = WPM_API.Data.DataContext.Entities.File;
 
 namespace WPM_API.Controllers
@@ -17,6 +16,10 @@ namespace WPM_API.Controllers
     [Authorize(Policy = Constants.Policies.Systemhouse)]
     public class SoftwareStreamController : BasisController
     {
+        public SoftwareStreamController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         public IActionResult AddSoftwareStream([FromBody] SoftwareStreamViewModel data)
         {
@@ -30,9 +33,10 @@ namespace WPM_API.Controllers
                 UnitOfWork.SoftwareStreams.MarkForInsert(newStream, GetCurrentUser().Id);
                 UnitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareStreamViewModel>(newStream), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareStreamViewModel>(newStream), serializerSettings);
                 return Ok(json);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -45,7 +49,7 @@ namespace WPM_API.Controllers
 
             List<SoftwareStreamViewModel> result = Mapper.Map<List<SoftwareStreamViewModel>>(streams);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return Ok(json);
         }
@@ -53,7 +57,7 @@ namespace WPM_API.Controllers
         [HttpGet]
         [Route("{streamName}")]
         public IActionResult CustomerSoftwareStreamNameExists([FromRoute] string streamName)
-        { 
+        {
             SoftwareStream stream = UnitOfWork.SoftwareStreams.GetAll().Where(x => x.Name == streamName).FirstOrDefault();
             if (stream == null)
             {
@@ -84,7 +88,8 @@ namespace WPM_API.Controllers
                 if (alreadyExists == null)
                 {
                     return Ok();
-                } else
+                }
+                else
                 {
                     return BadRequest("ERROR: The stream does exist already");
                 }
@@ -95,7 +100,8 @@ namespace WPM_API.Controllers
         [Route("edit")]
         public IActionResult EditSoftwareStream([FromBody] SoftwareStreamViewModel data)
         {
-            using (var unitOfWork = CreateUnitOfWork()) {
+            using (var unitOfWork = CreateUnitOfWork())
+            {
                 SoftwareStream toEdit = unitOfWork.SoftwareStreams.GetOrNull(data.Id, "Icon", "StreamMembers");
                 if (toEdit == null)
                 {
@@ -122,7 +128,8 @@ namespace WPM_API.Controllers
                         newIcon.Guid = data.Icon.Id;
                         unitOfWork.Files.MarkForInsert(newIcon);
                         toEdit.Icon = newIcon;
-                    } else
+                    }
+                    else
                     {
                         toEdit.Icon = icon;
                     }
@@ -162,14 +169,14 @@ namespace WPM_API.Controllers
                 unitOfWork.SoftwareStreams.MarkForUpdate(toEdit, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareStreamViewModel>(toEdit), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareStreamViewModel>(toEdit), serializerSettings);
                 return Ok(json);
             }
         }
 
         [HttpGet]
         [Route("getIconRef/{streamId}")]
-        public IActionResult GetStreamIconRef ([FromRoute] string streamId)
+        public IActionResult GetStreamIconRef([FromRoute] string streamId)
         {
             SoftwareStream swStream = UnitOfWork.SoftwareStreams.GetOrNull(streamId, "Icon");
             if (swStream == null)
@@ -180,12 +187,13 @@ namespace WPM_API.Controllers
             if (swStream.Icon == null)
             {
                 result = new FileRefModel();
-            } else
+            }
+            else
             {
                 result = Mapper.Map<FileRefModel>(swStream.Icon);
             }
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -220,7 +228,7 @@ namespace WPM_API.Controllers
                 softwares.Add(UnitOfWork.Software.GetOrNull(model.Id));
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(softwares), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(softwares), serializerSettings);
             return Ok(json);
         }
 

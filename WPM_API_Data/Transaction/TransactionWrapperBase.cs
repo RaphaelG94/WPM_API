@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Transactions;
-using WPM_API.Common.Logs;
+﻿using System.Transactions;
 using WPM_API.Data.Transaction.Actions;
 
-namespace  WPM_API.Data.Transaction
+namespace WPM_API.Data.Transaction
 {
     public abstract class TransactionWrapperBase : ITransactionWrapper
     {
@@ -60,7 +57,7 @@ namespace  WPM_API.Data.Transaction
                 }
                 catch (Exception ex)
                 {
-                    LogHolder.MainLog.Error(ex, "Error transaction rollback.");
+                    // LogHolder.MainLog.Error(ex, "Error transaction rollback.");
                 }
             }
 
@@ -70,7 +67,7 @@ namespace  WPM_API.Data.Transaction
             }
             catch (Exception ex)
             {
-                LogHolder.MainLog.Error(ex, "Error transaction dispose.");
+                // LogHolder.MainLog.Error(ex, "Error transaction dispose.");
             }
 
             IsDisposed = true;
@@ -82,7 +79,7 @@ namespace  WPM_API.Data.Transaction
                     AfterRollbackActions.ForEach(a => a.Execute());
                 }
             }
-            finally 
+            finally
             {
                 AfterCommitActions.Clear();
                 AfterRollbackActions.Clear();

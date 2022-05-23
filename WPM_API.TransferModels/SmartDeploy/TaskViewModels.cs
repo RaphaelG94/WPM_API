@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace  WPM_API.TransferModels.SmartDeploy
+namespace WPM_API.TransferModels.SmartDeploy
 {
     public class TaskViewModel : TaskAddViewModel
     {
@@ -18,7 +16,7 @@ namespace  WPM_API.TransferModels.SmartDeploy
     public class TaskAddViewModel
     {
         public string Name { get; set; }
-        public List<FileRefViewModel> Files { get; set; }
+        public List<FileRef> Files { get; set; }
         public string Executable { get; set; }
         public string Commandline { get; set; }
         public Boolean UseShellExecute { get; set; }

@@ -1,31 +1,33 @@
-﻿using WPM_API.Common;
-using DATA = WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.DataContext.Entities.AssetMgmt;
-using WPM_API.Models.AssetMgmt;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Linq.Dynamic.Core;
-using System.IO;
-using CsvHelper;
-using System.Net.Mail;
-using System.Net;
-using System.Text;
-using WPM_API.Models;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.DataContext;
-using CsvHelper.Configuration;
 using System.Globalization;
+using System.Linq.Dynamic.Core;
+using System.Net;
+using System.Net.Mail;
+using System.Text;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.DataContext.Entities.AssetMgmt;
+using WPM_API.Models;
+using WPM_API.Models.AssetMgmt;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers.AssetMgmt
 {
     [Route("asset-mgmt")]
     public class AssetMgmtCotnroller : BasisController
     {
+        public AssetMgmtCotnroller(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Authorize(Policy = Constants.Policies.Systemhouse)]
         public IActionResult GetAssetLabels()
@@ -75,7 +77,7 @@ namespace WPM_API.Controllers.AssetMgmt
                 }
 
                 // Return the asset models
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
             }
         }
@@ -117,9 +119,9 @@ namespace WPM_API.Controllers.AssetMgmt
                     clientDetails.MACAddress = macAddress;
                     result.Client = clientDetails;
                 }
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
-            }    
+            }
         }
 
         [HttpPost]
@@ -150,7 +152,7 @@ namespace WPM_API.Controllers.AssetMgmt
                 }
 
                 AssetModel newModel = UnitOfWork.AssetModels.CreateEmpty();
-                newModel.AssetStatus= "new";
+                newModel.AssetStatus = "new";
                 newModel.CustomerId = customerId;
                 newModel.AssetID = id;
                 newModel.CreatedByUserId = GetCurrentUser().Id;
@@ -166,7 +168,7 @@ namespace WPM_API.Controllers.AssetMgmt
             // TODO: Maybe check if sent correctly!
 
             // Return all created assets
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -195,7 +197,7 @@ namespace WPM_API.Controllers.AssetMgmt
             UnitOfWork.SaveChanges();
 
             // Return deleted asset model
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(toDelete), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(toDelete), serializerSettings);
             return Ok(json);
         }
 
@@ -224,7 +226,7 @@ namespace WPM_API.Controllers.AssetMgmt
             UnitOfWork.Clients.MarkForUpdate(client, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(asset), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(asset), serializerSettings);
             return Ok(json);
         }
 
@@ -306,7 +308,7 @@ namespace WPM_API.Controllers.AssetMgmt
                 */
 
                 AssetModelViewModel result = Mapper.Map<AssetModelViewModel>(assetModel);
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
 
                 // Return result
                 return Ok(json);
@@ -316,7 +318,7 @@ namespace WPM_API.Controllers.AssetMgmt
         [HttpPut]
         [Route("person/{assetId}/{personId}")]
         [Authorize(Policy = Constants.Policies.Customer)]
-        public IActionResult AssignPerson ([FromRoute] string assetId, [FromRoute] string personId)
+        public IActionResult AssignPerson([FromRoute] string assetId, [FromRoute] string personId)
         {
             AssetModel assetModel = UnitOfWork.AssetModels.GetOrNull(assetId);
 
@@ -336,8 +338,8 @@ namespace WPM_API.Controllers.AssetMgmt
 
             UnitOfWork.AssetModels.MarkForUpdate(assetModel, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
-     
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(assetModel), _serializerSettings);
+
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(assetModel), serializerSettings);
 
             return Ok(json);
         }
@@ -366,7 +368,7 @@ namespace WPM_API.Controllers.AssetMgmt
             UnitOfWork.AssetModels.MarkForUpdate(assetModel, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(assetModel), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(assetModel), serializerSettings);
 
             return Ok(json);
         }
@@ -394,14 +396,14 @@ namespace WPM_API.Controllers.AssetMgmt
             UnitOfWork.AssetModels.MarkForUpdate(asset);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(asset), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(asset), serializerSettings);
             return Ok(json);
         }
 
         [HttpPut]
         [Route("update")]
         [Authorize(Policy = Constants.Policies.Customer)]
-        public IActionResult UpdateAssetModel ([FromBody] AssetModelViewModel data)
+        public IActionResult UpdateAssetModel([FromBody] AssetModelViewModel data)
         {
             AssetModel assetModel = UnitOfWork.AssetModels.GetOrNull(data.Id);
 
@@ -413,7 +415,7 @@ namespace WPM_API.Controllers.AssetMgmt
             // Fetch AssetType and AssetClass
             AssetType assetType = UnitOfWork.AssetTypes.GetOrNull(data.AssetTypeId);
             AssetClass assetClass = UnitOfWork.AssetClasses.GetOrNull(data.AssetClassId);
-    
+
             /*
             if (assetType == null)
             {
@@ -426,7 +428,8 @@ namespace WPM_API.Controllers.AssetMgmt
             }
             */
 
-            if (data.Invoice != null) {
+            if (data.Invoice != null)
+            {
                 // Fetch invoice file
                 DATA.File invoice = UnitOfWork.Files.GetOrNull(data.Invoice.Id);
 
@@ -453,7 +456,7 @@ namespace WPM_API.Controllers.AssetMgmt
             UnitOfWork.AssetModels.MarkForUpdate(assetModel, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(assetModel), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<AssetModelViewModel>(assetModel), serializerSettings);
             return Ok(json);
         }
 
@@ -478,7 +481,7 @@ namespace WPM_API.Controllers.AssetMgmt
                             string clientName = "";
                             if (tempAsset.Client != null)
                             {
-                                qrValue = _siteOptions.SiteUrl + "assetmanagementdetails/" + tempAsset.Client.Id;
+                                qrValue = siteOptions.SiteUrl + "assetmanagementdetails/" + tempAsset.Client.Id;
                                 clientName = tempAsset.Client.Name;
                             }
 
@@ -533,7 +536,8 @@ namespace WPM_API.Controllers.AssetMgmt
                     Delimiter = ";",
                     IgnoreBlankLines = true,
                     HasHeaderRecord = true,
-                    MissingFieldFound = null                };
+                    MissingFieldFound = null
+                };
                 using (var csv = new CsvWriter(writer, csvConfig))
                 {
                     csv.WriteRecords(data);
@@ -545,10 +549,10 @@ namespace WPM_API.Controllers.AssetMgmt
         {
             try
             {
-                SmtpClient client = new SmtpClient(_sendMailCreds.Host, _sendMailCreds.Port);
-                NetworkCredential data = new NetworkCredential(_sendMailCreds.Email, _sendMailCreds.Password);
+                SmtpClient client = new SmtpClient(sendMailCreds.Host, sendMailCreds.Port);
+                NetworkCredential data = new NetworkCredential(sendMailCreds.Email, sendMailCreds.Password);
                 client.Credentials = data;
-                MailAddress from = new MailAddress(_sendMailCreds.Email, _sendMailCreds.DisplayName);
+                MailAddress from = new MailAddress(sendMailCreds.Email, sendMailCreds.DisplayName);
                 MailAddress to = new MailAddress("order@bitstream.de");
                 MailMessage message = new MailMessage(from, to);
                 string assetText = getAssetsEmailText(assets);
@@ -571,7 +575,7 @@ namespace WPM_API.Controllers.AssetMgmt
 
         private string getAssetsEmailText(List<AssetModelViewModel> assets)
         {
-            string url = _siteOptions.SiteUrl + "#/assetmanagementdetails/";
+            string url = siteOptions.SiteUrl + "#/assetmanagementdetails/";
             StringBuilder sr = new StringBuilder();
             sr.Append("<table><tr><th>Asset ID</th><th>QR value</th></tr>");
             foreach (AssetModelViewModel asset in assets)
@@ -583,7 +587,7 @@ namespace WPM_API.Controllers.AssetMgmt
             return sr.ToString();
         }
 
-        private double CalculateDepreciationValue (string price, int numberOfMonts, DateTime purchaseDate)
+        private double CalculateDepreciationValue(string price, int numberOfMonts, DateTime purchaseDate)
         {
             if (price != null && price != String.Empty)
             {
@@ -591,7 +595,8 @@ namespace WPM_API.Controllers.AssetMgmt
                 int monthsDifference = ((now.Year - purchaseDate.Year) * 12) + now.Month - purchaseDate.Month;
                 var priceDouble = Double.Parse(price);
                 return priceDouble - (priceDouble / numberOfMonts) * monthsDifference;
-            } else
+            }
+            else
             {
                 return 0;
             }

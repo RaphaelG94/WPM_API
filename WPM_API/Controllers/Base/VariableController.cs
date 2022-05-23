@@ -37,7 +37,7 @@
 //            result = AccumulateVariablesList(dbList);
 //            result.OrderBy(x => x.Reference);
 //            // Serialize and return the response
-//            var json = JsonConvert.SerializeObject(result.OrderByDescending(x => x.Reference).ToList(), _serializerSettings);
+//            var json = JsonConvert.SerializeObject(result.OrderByDescending(x => x.Reference).ToList(), serializerSettings);
 //            return new OkObjectResult(json);
 //        }
 
@@ -66,7 +66,7 @@
 //                result = Mapper.Map<VariableViewModel>(unitOfWork.Customers.Get(customerId, "Variables").Variables.First(x => x.Name.Equals(newVariable.Name)));
 //            }
 //            // Serialize and return the response
-//            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+//            var json = JsonConvert.SerializeObject(result, serializerSettings);
 //            return StatusCode(201, json);
 //        }
 
@@ -120,7 +120,7 @@
               
 //            }
 //            // Serialize and return the response
-//            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+//            var json = JsonConvert.SerializeObject(result, serializerSettings);
 //            return StatusCode(201, json);
 //        }
 

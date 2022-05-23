@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using WPM_API.Code.Infrastructure;
@@ -18,11 +19,13 @@ using WPM_API.Common.Emails.Impl;
 using WPM_API.Common.Files;
 using WPM_API.Common.Files.Impl;
 using WPM_API.Common.Files.Models;
+using WPM_API.Data;
 using WPM_API.Data.DataContext;
 using WPM_API.Data.Files;
 using WPM_API.Data.Files.Impl;
 using WPM_API.Data.Infrastructure;
 using WPM_API.Middlewares;
+using WPM_API.Options;
 using static WPM_API.Common.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +34,28 @@ var corsBuilder = new CorsPolicyBuilder();
 corsBuilder.AllowAnyHeader();
 corsBuilder.AllowAnyMethod();
 corsBuilder.AllowAnyOrigin();
+
+// Setup app default values
+var siteOptions = new SiteOptions();
+var appSettings = new AppSettings();
+var connectionStringsOptions = new ConnectionStrings();
+var agentEmailOptions = new AgentEmailOptions();
+var orderEmailOptions = new OrderEmailOptions();
+var sendEmailCreds = new SendMailCreds();
+
+builder.Configuration.GetSection(nameof(SiteOptions)).Bind(siteOptions);
+builder.Configuration.GetSection(nameof(AppSettings)).Bind(appSettings);
+builder.Configuration.GetSection(nameof(ConnectionStrings)).Bind(connectionStringsOptions);
+builder.Configuration.GetSection(nameof(AgentEmailOptions)).Bind(agentEmailOptions);
+builder.Configuration.GetSection(nameof(OrderEmailOptions)).Bind(orderEmailOptions);
+builder.Configuration.GetSection(nameof(SendMailCreds)).Bind(sendEmailCreds);
+
+builder.Services.AddSingleton(siteOptions);
+builder.Services.AddSingleton(appSettings);
+builder.Services.AddSingleton(connectionStringsOptions);
+builder.Services.AddSingleton(agentEmailOptions);
+builder.Services.AddSingleton(orderEmailOptions);
+builder.Services.AddSingleton(sendEmailCreds);
 
 builder.Services.AddCors(options =>
 {
@@ -48,6 +73,7 @@ builder.Services.AddDbContext<DBData>(options =>
         b => b.MigrationsAssembly("WPM_API.Data.ProjectMigration"));
 }
 );
+
 builder.Services.AddMemoryCache();
 builder.Services.AddOptions();
 // Probleme Dependency Injection
@@ -55,11 +81,37 @@ builder.Services.AddOptions();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(option =>
+{
+    option.SwaggerDoc("v1", new OpenApiInfo { Title = "Demo API", Version = "v1" });
+    option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Scheme = "Bearer",
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT"
+    });
+    option.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type=ReferenceType.SecurityScheme,
+                    Id="Bearer"
+                }
+            },
+            new string[]{}
+        }
+    });
+});
 
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 // Custom Services
+builder.Services.AddScoped<DBData>();
 builder.Services.Configure<FileFactoryOptions>(builder.Configuration.GetSection("FileOptions"));
 builder.Services.AddSingleton<IFileFactoryService, FileFactoryService>();
 builder.Services.AddSingleton<IAttachmentService, AttachmentService>();
@@ -155,6 +207,7 @@ builder.Services.AddAuthorization(auth =>
         .Build());
 });
 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -165,12 +218,29 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-// Probleme dependency injection
-app.UseMiddleware<JwtMiddleware>();
 
 app.UseAuthorization();
 app.UseAuthentication();
 
+app.UseMiddleware<PopulateClaimsMiddleware>();
+
+
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<DBData>();
+        // Initialize database
+        await DbInitializer.InitializeAsync(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occured while inializing database");
+    }
+}
 
 app.Run();

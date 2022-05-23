@@ -1,31 +1,23 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.FileRepository;
-using WPM_API.Data.Models;
-using WPM_API.TransferModels.SmartDeploy;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Task = WPM_API.Data.DataContext.Entities.Task;
-using System.IO;
-using File = WPM_API.Data.DataContext.Entities.File;
-using WPM_API.TransferModels;
-using System;
-using System.Text;
 using Newtonsoft.Json.Serialization;
-using static WPM_API.FileRepository.FileRepository;
+using System.Net;
+using System.Text;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Entities.SmartDeploy;
 using WPM_API.Data.DataContext.Entities.Storages;
-using WPM_API.Azure;
-using System.Net;
-using System.Threading;
+using WPM_API.Data.Models;
 using WPM_API.Options;
-using Microsoft.Extensions.DependencyInjection;
-using AutoMapper;
-using WPM_API.Code.Mappers.Data;
+using WPM_API.TransferModels;
+using WPM_API.TransferModels.SmartDeploy;
+using static WPM_API.FileRepository.FileRepository;
+using File = WPM_API.Data.DataContext.Entities.File;
+using Task = WPM_API.Data.DataContext.Entities.Task;
 
 namespace WPM_API.Controllers
 {
@@ -33,14 +25,17 @@ namespace WPM_API.Controllers
     [Route("/software")]
     public class SoftwareController : BasisController
     {
+        public SoftwareController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
 
         [HttpPost]
         [Route("icon/upload")]
         public async Task<IActionResult> UploadIconAsync(Microsoft.AspNetCore.Http.IFormFile file)
         {
-            FileRepository.FileRepository software = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             string id = await software.UploadFile(file.OpenReadStream());
-            var json = JsonConvert.SerializeObject(new { Id = id }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -57,10 +52,10 @@ namespace WPM_API.Controllers
                 result.Id = "";
                 result.RuleDetection.VersionNr = "";
                 result.RuleDetection.Data = null;
-                result.TaskInstall.Files = new List<FileRefViewModel>();
+                result.TaskInstall.Files = new List<FileRef>();
                 result.TaskInstall.Executable = "";
                 result.RevisionNumber = temp.RevisionNumber;
-                return Ok(JsonConvert.SerializeObject(temp, _serializerSettings));
+                return Ok(JsonConvert.SerializeObject(temp, serializerSettings));
             }
         }
 
@@ -69,9 +64,9 @@ namespace WPM_API.Controllers
         [Authorize(Policy = Constants.Policies.Systemhouse)]
         public async Task<IActionResult> UploadIconAndBannerAsync(Microsoft.AspNetCore.Http.IFormFile file)
         {
-            FileRepository.FileRepository software = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.IconsAndBanners);
+            FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.IconsAndBanners);
             string id = await software.UploadFile(file.OpenReadStream());
-            var json = JsonConvert.SerializeObject(new { Id = id }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -97,7 +92,7 @@ namespace WPM_API.Controllers
             // }
 
             // Get FileRef and return it
-            //json = JsonConvert.SerializeObject(Mapper.Map<FileRef>(dbSoftware.Icon), _serializerSettings);
+            //json = JsonConvert.SerializeObject(Mapper.Map<FileRef>(dbSoftware.Icon), serializerSettings);
 
             return Ok();
         }
@@ -123,7 +118,8 @@ namespace WPM_API.Controllers
                         ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                     });
                 return File(Encoding.UTF8.GetBytes(json), "application/json", toExport.Name + ".json");
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -144,7 +140,7 @@ namespace WPM_API.Controllers
             }
             List<SoftwareViewModel> result = Mapper.Map<List<SoftwareViewModel>>(softwareList);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -160,7 +156,7 @@ namespace WPM_API.Controllers
             }
             SoftwareViewModel result = Mapper.Map<SoftwareViewModel>(toLoad);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -198,7 +194,8 @@ namespace WPM_API.Controllers
                 }
 
                 // Mapping osVersionName data
-                if (software.RuleApplicability.OsVersionNames != null) {
+                if (software.RuleApplicability.OsVersionNames != null)
+                {
                     for (int i = 0; i < newSoftware.RuleApplicability.OsVersionNames.Count; i++)
                     {
                         newSoftware.RuleApplicability.OsVersionNames[i].Version = software.RuleApplicability.OsVersionNames[i];
@@ -222,7 +219,7 @@ namespace WPM_API.Controllers
                         newSoftware.RuleApplicability.Win11Versions[i].Version = software.RuleApplicability.Win11Versions[i];
                     }
                 }
-                
+
                 if (newSoftware.TaskInstall != null)
                 {
                     // Set the ID as GUID and delete ID for automatically ID from EF
@@ -324,7 +321,7 @@ namespace WPM_API.Controllers
                 newSoftware = UnitOfWork.Software.Get(newSoftware.Id, SoftwareIncludes.GetAllIncludes());
                 SoftwareViewModel result = Mapper.Map<SoftwareViewModel>(newSoftware);
 
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return new OkObjectResult(json);
             }
         }
@@ -335,7 +332,7 @@ namespace WPM_API.Controllers
         {
             List<RevisionMessage> revisionMessages = UnitOfWork.RevisionMessages.GetAll().Where(x => x.SoftwareId == softwareId).ToList();
 
-            var json = JsonConvert.SerializeObject(revisionMessages, _serializerSettings);
+            var json = JsonConvert.SerializeObject(revisionMessages, serializerSettings);
             return Ok(json);
         }
 
@@ -573,7 +570,8 @@ namespace WPM_API.Controllers
                 dbSoftware.RuleDetection = detectionRule;
                 dbSoftware.TaskInstall.CheckVersionNr = dbSoftware.RuleDetection.CheckVersionNr;
                 dbSoftware.TaskInstall.VersionNr = dbSoftware.RuleDetection.VersionNr;
-                if (dbSoftware.RuleDetection.Path != null) {
+                if (dbSoftware.RuleDetection.Path != null)
+                {
                     dbSoftware.TaskInstall.ExePath = dbSoftware.RuleDetection.Path;
                 }
 
@@ -603,7 +601,7 @@ namespace WPM_API.Controllers
                 foreach (Win10Version toDelete in applicabilityRule.Win10Versions)
                 {
                     unitOfWork.Win10Versions.MarkForDelete(toDelete, GetCurrentUser().Id);
-                }                
+                }
                 applicabilityRule.Win10Versions = new List<Win10Version>();
                 for (int i = 0; i < softwareEdit.RuleApplicability.Win10Versions.Count; i++)
                 {
@@ -630,7 +628,7 @@ namespace WPM_API.Controllers
 
                 dbSoftware.RuleApplicability = applicabilityRule;
 
-                unitOfWork.SaveChanges();                
+                unitOfWork.SaveChanges();
 
                 if (dbSoftware.TaskInstall != null)
                 {
@@ -639,7 +637,7 @@ namespace WPM_API.Controllers
                     dbSoftware.TaskInstall.RunningContext = softwareEdit.RunningContext;
                     dbSoftware.TaskInstall.InstallationType = softwareEdit.TaskInstall.InstallationType;
                     dbSoftware.TaskInstall.RestartRequired = softwareEdit.TaskInstall.RestartRequired;
-                    foreach (FileRefViewModel tempFileView in softwareEdit.TaskInstall.Files)
+                    foreach (FileRef tempFileView in softwareEdit.TaskInstall.Files)
                     {
                         File tempFile = unitOfWork.Files.GetOrNull(tempFileView.Id);
                         if (tempFile != null)
@@ -673,7 +671,7 @@ namespace WPM_API.Controllers
                 }
 
 
-                List<string> ids = new List<string>();                
+                List<string> ids = new List<string>();
 
                 // Check if files were deleted
                 if (dbSoftware.TaskUninstall != null)
@@ -767,8 +765,8 @@ namespace WPM_API.Controllers
                 unitOfWork.SaveChanges();
                 // Software was changed and is returned.
                 dbSoftware = UnitOfWork.Software.Get(dbSoftware.Id, SoftwareIncludes.GetAllIncludes());
-                SoftwareViewModel result = Mapper.Map<SoftwareViewModel>(dbSoftware);                
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                SoftwareViewModel result = Mapper.Map<SoftwareViewModel>(dbSoftware);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
 
                 List<CustomerSoftware> customerSoftwares = unitOfWork.CustomerSoftwares.GetAll().Where(x => x.SoftwareId == dbSoftware.Id).ToList();
                 foreach (CustomerSoftware cs in customerSoftwares)
@@ -777,8 +775,8 @@ namespace WPM_API.Controllers
                     cs.AllWin11Versions = dbSoftware.AllWin11Versions;
                     unitOfWork.CustomerSoftwares.MarkForUpdate(cs);
                 }
-                
-                System.Threading.Tasks.Task.Run(() => UpdateCustomerSWPackages(dbSoftware, _appSettings, _connectionStrings, GetCurrentUser().Id));
+
+                System.Threading.Tasks.Task.Run(() => UpdateCustomerSWPackages(dbSoftware, appSettings, connectionStrings, GetCurrentUser().Id));
 
                 return new OkObjectResult(json);
             }
@@ -800,7 +798,7 @@ namespace WPM_API.Controllers
                         // Shop files
                         WPM_API.Data.DataContext.Entities.Customer customer = unitOfWork.Customers.GetOrNull(stream.CustomerId, CustomerIncludes.GetAllIncludes());
                         var cep = GetCEP(stream.CustomerId);
-                        StorageEntryPoint csdp = customer.StorageEntryPoints.Find(x => x.IsCSDP == true);                        
+                        StorageEntryPoint csdp = customer.StorageEntryPoints.Find(x => x.IsCSDP == true);
                         FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                         AzureCommunicationService azureCustomer;
                         if (!csdp.Managed)
@@ -824,8 +822,8 @@ namespace WPM_API.Controllers
                                 {
                                     sasKeys.Add(sasKey);
                                 }
-                                
-                            }                                                                                   
+
+                            }
                         }
 
                         List<Microsoft.Azure.Management.Storage.Models.StorageAccount> storageAccounts = await azureCustomer.StorageService().GetStorageAccounts(csdp.SubscriptionId, csdp.ResourceGrpName);
@@ -847,11 +845,11 @@ namespace WPM_API.Controllers
                         unitOfWork.SaveChanges();
                     }
                 }
-                
+
                 unitOfWork.SaveChanges();
             }
         }
-        
+
         /*
         private CustomerSoftware MapCustomerSoftware (CustomerSoftware customerSoftware, Software dbSoftware)
         {
@@ -912,7 +910,7 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> DownloadFileAsync([FromRoute] string fileId)
         {
             // TODO: Get files from CSDP
-            FileRepository.FileRepository software = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             var file = UnitOfWork.Files.Get(fileId);
             if (file.Guid != null)
             {
@@ -921,7 +919,8 @@ namespace WPM_API.Controllers
                 await blob.DownloadToAsync(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, file.Name);
-            } else
+            }
+            else
             {
                 return Ok();
             }
@@ -944,14 +943,15 @@ namespace WPM_API.Controllers
             }
             if (swStream.Icon != null)
             {
-                FileRepository.FileRepository software = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                 var file = UnitOfWork.Files.Get(swStream.Icon.Id);
                 var blob = software.GetBlobFile(file.Guid);
                 var ms = new MemoryStream();
                 await blob.DownloadToAsync(ms);
                 ms.Seek(0, SeekOrigin.Begin);
                 return File(ms, System.Net.Mime.MediaTypeNames.Application.Octet, file.Name);
-            } else
+            }
+            else
             {
                 return Ok();
             }
@@ -962,16 +962,16 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> DownloadSoftwareFiles([FromRoute] string softwareId)
         {
             Software sw = UnitOfWork.Software.GetOrNull(softwareId, "TaskInstall", "TaskInstall.Files", "TaskInstall.ExecutionFile");
-            FileRepository.FileRepository fileRepository = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+            FileRepository.FileRepository fileRepository = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             List<FileAndSAS> SASKeys = new List<FileAndSAS>();
-            foreach(File file in sw.TaskInstall.Files)
+            foreach (File file in sw.TaskInstall.Files)
             {
                 FileAndSAS fileAndSAS = await fileRepository.GetSASFile(file.Name, file.Guid);
                 fileAndSAS.FileName = file.Name;
                 SASKeys.Add(fileAndSAS);
             }
 
-            var json = JsonConvert.SerializeObject(SASKeys, _serializerSettings);
+            var json = JsonConvert.SerializeObject(SASKeys, serializerSettings);
             return Ok(json);
         }
 
@@ -987,16 +987,16 @@ namespace WPM_API.Controllers
                     return BadRequest("ERROR: The software package does not exist");
                 }
 
-                sw.PublishInShop = true;                
+                sw.PublishInShop = true;
                 unitOfWork.Software.MarkForUpdate(sw, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
-                System.Threading.Tasks.Task.Run(() => AutoUpdateCustomerSWStreams(sw, _appSettings, _connectionStrings, GetCurrentUser().Id));
-                var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareViewModel>(sw), _serializerSettings);
+                System.Threading.Tasks.Task.Run(() => AutoUpdateCustomerSWStreams(sw, appSettings, connectionStrings, GetCurrentUser().Id));
+                var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareViewModel>(sw), serializerSettings);
                 return Ok(json);
-            }            
+            }
         }
 
-        private async void AutoUpdateCustomerSWStreams (Software sw, AppSettings appSettings, ConnectionStrings connectionStrings, string userId)
+        private async void AutoUpdateCustomerSWStreams(Software sw, AppSettings appSettings, ConnectionStrings connectionStrings, string userId)
         {
             // TODO: Log errors 
             try
@@ -1085,20 +1085,20 @@ namespace WPM_API.Controllers
 
                             // TODO: Create CustomerSoftware for CustomerSoftwareStream
                             CustomerSoftware newSoftware = unitOfWork.CustomerSoftwares.CreateEmpty();
-                            newSoftware = MapCustomerSoftware(newSoftware, sw);                            
+                            newSoftware = MapCustomerSoftware(newSoftware, sw);
                             newSoftware.SoftwareId = sw.Id;
                             newSoftware.CustomerStatus = "Test";
                             newSoftware.CustomerSoftwareStreamId = customerStream.Id;
                             unitOfWork.CustomerSoftwares.MarkForInsert(newSoftware, userId);
                             unitOfWork.SaveChanges();
-                            customerStream.StreamMembers.Add(newSoftware);                                                                                   
+                            customerStream.StreamMembers.Add(newSoftware);
                             unitOfWork.CustomerSoftwareStreamss.MarkForUpdate(customerStream, userId);
                             newSoftware.CustomerSoftwareStreamId = customerStream.Id;
                             newSoftware.TaskInstall = sw.TaskInstall;
                             newSoftware.TaskUninstall = sw.TaskUninstall;
                             newSoftware.TaskUpdate = sw.TaskUpdate;
                             unitOfWork.CustomerSoftwares.MarkForUpdate(newSoftware, userId);
-                            unitOfWork.SaveChanges();                            
+                            unitOfWork.SaveChanges();
                         }
                     }
                 }
@@ -1110,7 +1110,7 @@ namespace WPM_API.Controllers
         }
 
         private CustomerSoftware MapCustomerSoftware(CustomerSoftware result, Software sw)
-        {           
+        {
             result.AllWin10Versions = sw.AllWin10Versions;
             result.AllWin11Versions = sw.AllWin11Versions;
             result.Checksum = sw.Checksum;
@@ -1120,7 +1120,7 @@ namespace WPM_API.Controllers
             result.DedicatedDownloadLink = sw.DedicatedDownloadLink;
             result.DisplayRevisionNumber = sw.DisplayRevisionNumber;
             result.InstallationTime = sw.InstallationTime;
-            result.MinimalSoftwareId  = sw.MinimalSoftwareId;
+            result.MinimalSoftwareId = sw.MinimalSoftwareId;
             result.Name = sw.Name;
             result.NextSoftwareId = sw.NextSoftwareId;
             result.PackageSize = sw.PackageSize;
@@ -1130,7 +1130,7 @@ namespace WPM_API.Controllers
             result.RuleApplicability = sw.RuleApplicability;
             result.RuleDetection = sw.RuleDetection;
             result.RunningContext = sw.RunningContext;
-            result.Status = sw.Status;            
+            result.Status = sw.Status;
             result.Type = sw.Type;
             result.VendorReleaseDate = sw.VendorReleaseDate;
             result.Version = sw.Version;
@@ -1152,7 +1152,7 @@ namespace WPM_API.Controllers
             UnitOfWork.Software.MarkForUpdate(sw, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareViewModel>(sw), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<SoftwareViewModel>(sw), serializerSettings);
             return Ok(json);
         }
 
@@ -1209,7 +1209,7 @@ namespace WPM_API.Controllers
                         // }
                     }
                 }
-                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(previousSoftwares), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(previousSoftwares), serializerSettings);
                 return Ok(json);
             }
         }
@@ -1270,7 +1270,7 @@ namespace WPM_API.Controllers
                         }
                     }
                 }
-                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(previousSoftwares), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(previousSoftwares), serializerSettings);
                 return Ok(json);
             }
         }
@@ -1287,10 +1287,12 @@ namespace WPM_API.Controllers
                     if (version1 < version2)
                     {
                         result[i] = "smaller";
-                    } else if (version1 == version2)
+                    }
+                    else if (version1 == version2)
                     {
                         result[i] = "similar";
-                    } else
+                    }
+                    else
                     {
                         result[i] = "bigger";
                     }
@@ -1350,7 +1352,7 @@ namespace WPM_API.Controllers
                     }
                 }
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(nextSoftwares), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(nextSoftwares), serializerSettings);
                 return Ok(json);
             }
         }
@@ -1409,7 +1411,7 @@ namespace WPM_API.Controllers
                     }
                 }
 
-                 var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(nextSoftwares), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<List<SoftwareViewModel>>(nextSoftwares), serializerSettings);
                 return Ok(json);
             }
         }
@@ -1424,7 +1426,7 @@ namespace WPM_API.Controllers
                 software.Status = "Active";
                 unitOfWork.SaveChanges();
 
-                return Ok(JsonConvert.SerializeObject(software, _serializerSettings));
+                return Ok(JsonConvert.SerializeObject(software, serializerSettings));
             }
         }
 
@@ -1438,7 +1440,7 @@ namespace WPM_API.Controllers
                 software.Status = "Outdated";
                 unitOfWork.SaveChanges();
 
-                return Ok(JsonConvert.SerializeObject(software, _serializerSettings));
+                return Ok(JsonConvert.SerializeObject(software, serializerSettings));
             }
         }
 
@@ -1446,7 +1448,7 @@ namespace WPM_API.Controllers
         {
             public string Value { get; set; }
             public string EntityId { get; set; }
-        } 
+        }
     }
 }
 

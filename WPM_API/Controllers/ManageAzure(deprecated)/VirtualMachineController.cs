@@ -27,7 +27,7 @@
 //    //    try
 //    //    {
 //    //        var machine = await azure.GetVirtualMachineAsync(vm.SubscriptionId, vm.ResourceGroupName, vm.Id);
-//    //        var json = JsonConvert.SerializeObject(Mapper.Map<VirtualMachineViewModel>(machine), _serializerSettings);
+//    //        var json = JsonConvert.SerializeObject(Mapper.Map<VirtualMachineViewModel>(machine), serializerSettings);
 //    //        return new OkObjectResult(json);
 //    //    }
 //    //    catch (Exception ex)
@@ -46,7 +46,7 @@
 //    //    try
 //    //    {
 //    //        var machine = await azure.AddVirtualMachineAsync(Mapper.Map<VirtualMachineAddModel>(vm));
-//    //        var json = JsonConvert.SerializeObject(Mapper.Map<VirtualMachineViewModel>(machine), _serializerSettings);
+//    //        var json = JsonConvert.SerializeObject(Mapper.Map<VirtualMachineViewModel>(machine), serializerSettings);
 //    //        return new OkObjectResult(json);
 //    //    }
 //    //    catch (Exception ex)
@@ -65,7 +65,7 @@
 //    //    try
 //    //    {
 //    //        var machine = await azure.EditVirtualMachineAsync(Mapper.Map<VirtualMachineEditModel>(vm));
-//    //        var json = JsonConvert.SerializeObject(Mapper.Map<VirtualMachineViewModel>(machine), _serializerSettings);
+//    //        var json = JsonConvert.SerializeObject(Mapper.Map<VirtualMachineViewModel>(machine), serializerSettings);
 //    //        return new OkObjectResult(json);
 //    //    }
 //    //    catch (Exception ex)

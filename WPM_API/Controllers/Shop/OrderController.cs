@@ -1,25 +1,21 @@
-﻿using WPM_API.Azure;
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.DataContext.Entities.Storages;
-using WPM_API.Data.DataRepository;
-using WPM_API.Data.Models;
-using WPM_API.Models;
-using WPM_API.Models.Release_Mgmt;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
-using System.Threading.Tasks;
-using System.Web;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.DataContext.Entities.Storages;
+using WPM_API.Data.Models;
+using WPM_API.Models;
+using WPM_API.Models.Release_Mgmt;
+using WPM_API.Options;
 using static WPM_API.FileRepository.FileRepository;
 
 namespace WPM_API.Controllers
@@ -28,6 +24,9 @@ namespace WPM_API.Controllers
     [Route("/order")]
     public class OrderController : BasisController
     {
+        public OrderController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
 
         /// <summary>
         /// Place a new order.
@@ -64,12 +63,13 @@ namespace WPM_API.Controllers
                     if (csdp.Managed)
                     {
                         // TODO: Check system; fix for live sys
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
-                    } else
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
+                    }
+                    else
                     {
                         azureCustomer = new AzureCommunicationService(cep.TenantId, cep.ClientId, cep.ClientSecret);
                     }
-                    
+
                     // string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     var newOrder = unitOfWork.Order.CreateEmpty();
                     newOrder.CreatedByUserId = GetCurrentUser().Id;
@@ -119,12 +119,13 @@ namespace WPM_API.Controllers
 
                     unitOfWork.SaveChanges();
                     newOrder = unitOfWork.Order.Get(newOrder.Id, "ShopItems", "ShopItems.ShopItem");
-                    var json = JsonConvert.SerializeObject(Mapper.Map<OrderViewModel>(newOrder), _serializerSettings);
+                    var json = JsonConvert.SerializeObject(Mapper.Map<OrderViewModel>(newOrder), serializerSettings);
                     // SendOrderEmail(newOrder);
                     return new OkObjectResult(json);
                 }
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 return BadRequest("ERROR: " + e.Message);
             }
         }
@@ -150,7 +151,7 @@ namespace WPM_API.Controllers
 
         private async System.Threading.Tasks.Task CopyFilesToCSDP(CloudBlockBlob blob, CloudBlobContainer destContainer, CloudBlobContainer srcContainer, Driver driver, CloudStorageAccount srcStrgAcc)
         {
-            
+
             CloudBlockBlob destBlob = destContainer.GetBlockBlobReference(blob.Name);
             // Create SAS key
             string sas = srcContainer.GetSharedAccessSignature(new SharedAccessBlobPolicy()
@@ -176,7 +177,8 @@ namespace WPM_API.Controllers
         {
             try
             {
-                using (var unitOfWork = CreateUnitOfWork()) {
+                using (var unitOfWork = CreateUnitOfWork())
+                {
                     WPM_API.Data.DataContext.Entities.Customer customer = unitOfWork.Customers.GetOrNull(customerId, CustomerIncludes.GetAllIncludes());
                     var cep = GetCEP(customerId);
                     Software software = unitOfWork.Software.GetOrNull(shopItem.Id, SoftwareIncludes.GetAllIncludes());
@@ -186,7 +188,7 @@ namespace WPM_API.Controllers
                         return BadRequest("ERROR: The customer does not exist");
                     }
                     csdp = customer.StorageEntryPoints.Find(x => x.IsCSDP == true);
-                    if (cep == null && csdp!= null && !csdp.Managed)
+                    if (cep == null && csdp != null && !csdp.Managed)
                     {
                         return BadRequest("ERROR: The csdp Cloud Entry Point is not set");
                     }
@@ -202,18 +204,20 @@ namespace WPM_API.Controllers
                     List<FileAndSAS> sasKeys = new List<FileAndSAS>();
 
                     // Create needed Azrue connections
-                    if (_appSettings == null || _connectionStrings == null)
+                    if (appSettings == null || connectionStrings == null)
                     {
                         return BadRequest("ERROR: Cannot fetch Bitstream Azure connection from config files");
                     }
-                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                     AzureCommunicationService azureCustomer;
-                    if (!csdp.Managed) {
+                    if (!csdp.Managed)
+                    {
                         azureCustomer = new AzureCommunicationService(cep.TenantId, cep.ClientId, cep.ClientSecret);
-                    } else
+                    }
+                    else
                     {
                         // TODO: Check for system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
 
                     // Get files from BitStream storage account
@@ -271,7 +275,8 @@ namespace WPM_API.Controllers
                         customerSoftwareStream.StreamMembers.Add(newSoftware);
                         unitOfWork.CustomerSoftwareStreamss.MarkForUpdate(customerSoftwareStream, GetCurrentUser().Id);
                         unitOfWork.CustomerSoftwares.MarkForInsert(newSoftware, GetCurrentUser().Id);
-                    } else
+                    }
+                    else
                     {
                         // Create new CustomerSoftwareStream and add CustomerSoftware
                         SoftwareStream softwareStream = unitOfWork.SoftwareStreams.GetOrNull(software.SoftwareStreamId);
@@ -300,11 +305,12 @@ namespace WPM_API.Controllers
                     newSoftware.TaskInstall = null;
                     newSoftware.TaskUpdate = null;
                     newSoftware.TaskUninstall = null;
-                    var json = JsonConvert.SerializeObject(newSoftware, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(newSoftware, serializerSettings);
 
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 string innerExceptionMessage = "";
                 if (e.InnerException != null)
@@ -320,12 +326,12 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> OrderOSImage([FromRoute] string customerId, [FromBody] ShopItemViewModel shopItem)
         {
             try
-            {                
-                using (var unitOfWork = CreateUnitOfWork()) 
+            {
+                using (var unitOfWork = CreateUnitOfWork())
                 {
                     WPM_API.Data.DataContext.Entities.Customer customer = unitOfWork.Customers.GetOrNull(customerId, CustomerIncludes.GetAllIncludes());
                     var cep = GetCEP(customerId);
-                    
+
                     Image image = unitOfWork.Images.GetOrNull(shopItem.Id, "Unattend", "OEMPartition");
                     StorageEntryPoint csdp = null;
                     if (customer == null)
@@ -341,24 +347,26 @@ namespace WPM_API.Controllers
                     {
                         return BadRequest("ERROR: The csdp storage entry point does not exist or has not been created yet");
                     }
-                
+
                     if (image == null)
                     {
                         return BadRequest("ERROR: The os image does not exist");
                     }
                     ImageStream imageStream = unitOfWork.ImageStreams.Get(image.ImageStreamId);
 
-                    CloudStorageAccount srcStrgAcc = CloudStorageAccount.Parse(_appSettings.FileDestConnectionString);
+                    CloudStorageAccount srcStrgAcc = CloudStorageAccount.Parse(appSettings.FileDestConnectionString);
                     CloudBlobClient csdpClient = srcStrgAcc.CreateCloudBlobClient();
                     CloudBlobContainer csdpBitstream = csdpClient.GetContainerReference("bsdp-v202011");
 
                     AzureCommunicationService azureCustomer;
-                    if (!csdp.Managed) {
+                    if (!csdp.Managed)
+                    {
                         azureCustomer = new AzureCommunicationService(cep.TenantId, cep.ClientId, cep.ClientSecret);
-                    } else
+                    }
+                    else
                     {
                         // TODO: Check system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -367,12 +375,13 @@ namespace WPM_API.Controllers
                     CloudBlockBlob customerDestBlob;
                     if (imageStream.Type == "Windows")
                     {
-                       //  HELPER.Helper helper = new HELPER.Helper();
+                        //  HELPER.Helper helper = new HELPER.Helper();
                         // helper.TransferUrlToAzureBlob(imageStream.PrefixUrl + "Image_Repository/" + imageStream.SubFolderName + "/" + image.FileName + imageStream.SASKey, connectionString, "csdp", "Image_Repository/" + imageStream.SubFolderName + "/" + image.FileName);
                         // Setup reference to customer csdp & copy blob                        
                         customerDestBlob = customerContainer.GetBlockBlobReference("Image_Repository/" + imageStream.SubFolderName + "/" + image.FileName);
                         var result = await customerDestBlob.StartCopyAsync(new Uri(imageStream.PrefixUrl + "Image_Repository/" + imageStream.SubFolderName + "/" + image.FileName + imageStream.SASKey));
-                    } else if (imageStream.Type == "Linux")
+                    }
+                    else if (imageStream.Type == "Linux")
                     {
                         // Copy all files of imageStream subfolder path
 
@@ -383,7 +392,7 @@ namespace WPM_API.Controllers
                     }
 
                     // Copy standard files from CSDP of BitStream
-                    
+
                     CloudBlobDirectory customerRepository = csdpBitstream.GetDirectoryReference("Customer_Repository");
                     CloudBlobDirectory softwareRepository = csdpBitstream.GetDirectoryReference("Software_Repository");
                     var customerRepFileList = await customerRepository.ListBlobsSegmentedAsync(null);
@@ -409,7 +418,7 @@ namespace WPM_API.Controllers
                         string uriString = srcStrgAcc.BlobStorageUri.PrimaryUri.AbsoluteUri + "bsdp-v202011" + "/" + blobPathUri + sasKey;
                         var uri = new Uri(uriString);
                         await customerDestBlob.StartCopyAsync(uri);
-                    }                    
+                    }
 
                     if (image.Unattend != null)
                     {
@@ -422,7 +431,7 @@ namespace WPM_API.Controllers
                         string uriString = srcStrgAcc.BlobStorageUri.PrimaryUri.AbsoluteUri + "bsdp-v202011" + "/" + blobPathUri + sasKey;
                         var uri = new Uri(uriString);
                         await customerDestBlob.StartCopyAsync(uri);
-                    }                                        
+                    }
 
                     // Check Customer Image Stream
                     CustomerImageStream customerImageStream = null;
@@ -486,10 +495,11 @@ namespace WPM_API.Controllers
                     unitOfWork.Customers.MarkForUpdate(customer, GetCurrentUser().Id);
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(newImage, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(newImage, serializerSettings);
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 string innerExceptionMessage = "";
                 if (e.InnerException != null)
@@ -511,7 +521,7 @@ namespace WPM_API.Controllers
                 Permissions = SharedAccessBlobPermissions.Read | SharedAccessBlobPermissions.List
             });
             string blobPathUri = blob.Name.Replace(" ", "%20");
-            string uriString = srcStrgAcc.BlobStorageUri.PrimaryUri.AbsoluteUri + containerName +"/" + blobPathUri + sas;
+            string uriString = srcStrgAcc.BlobStorageUri.PrimaryUri.AbsoluteUri + containerName + "/" + blobPathUri + sas;
             var uri = new Uri(uriString);
             var result = await destBlob.StartCopyAsync(uri);
         }
@@ -549,7 +559,7 @@ namespace WPM_API.Controllers
                 }
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<OrderViewModel>(dbOrder), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<OrderViewModel>(dbOrder), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -558,7 +568,7 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> OrderDriver([FromRoute] string customerId, [FromBody] DriverViewModel payload)
         {
             using (var unitOfWork = CreateUnitOfWork())
-            {                
+            {
                 Driver toShop = unitOfWork.Drivers.Get(payload.Id);
                 List<CustomerDriver> customerDrivers = unitOfWork.CustomerDrivers.GetAll().ToList();
                 if (customerDrivers.Find(x => x.DriverId == toShop.Id) != null)
@@ -584,7 +594,7 @@ namespace WPM_API.Controllers
                     if (csdp.Managed)
                     {
                         // TODO: Check system; fix for live sys
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -614,12 +624,13 @@ namespace WPM_API.Controllers
                         unitOfWork.CustomerDrivers.MarkForInsert(newCustomerDriver, GetCurrentUser().Id);
                         unitOfWork.SaveChanges();
                         return Ok();
-                    } catch (Exception ex1)
+                    }
+                    catch (Exception ex1)
                     {
                         return BadRequest("ERROR: " + ex1.Message);
-                    }                                        
+                    }
                 }
-            }            
+            }
         }
 
         [HttpPost]
@@ -649,11 +660,11 @@ namespace WPM_API.Controllers
                     }
 
                     // Create needed Azrue connections
-                    if (_appSettings == null || _connectionStrings == null)
+                    if (appSettings == null || connectionStrings == null)
                     {
                         return BadRequest("ERROR: Cannot fetch Bitstream Azure connection from config files");
                     }
-                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                     AzureCommunicationService azureCustomer;
                     if (!csdp.Managed)
                     {
@@ -662,7 +673,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check for system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
 
                     // Connect to customer Azure storage
@@ -701,7 +712,7 @@ namespace WPM_API.Controllers
                                 request.Method = "GET";
                                 WebResponse response = request.GetResponse();
                                 await csdpCustomer.UploadFile(response.GetResponseStream(), "filerepository/" + sasItem.FileName);
-                            }                            
+                            }
                         }
                         // Check for CustomerSoftwareStream
                         CustomerSoftwareStream customerSoftwareStream = null;
@@ -764,17 +775,18 @@ namespace WPM_API.Controllers
                     cs.TaskUninstall = null;
                     cs.TaskUpdate = null;
                 }
-                var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
-            }            
+            }
         }
 
         private IActionResult SendOrderEmail(Order order)
         {
-            String fromUserName = _orderEmailOptions.ReceiverEmail;
+            String fromUserName = orderEmailOptions.ReceiverEmail;
             MailMessage msg = new MailMessage();
             using (var unitOfWork = CreateUnitOfWork())
             {
@@ -802,7 +814,7 @@ namespace WPM_API.Controllers
                     string totalPrice = item.ShopItem.Price;
                     // int totalPrice = Int32.Parse(item.ShopItem.Price.Remove(item.ShopItem.Price.Length - 1)) * amount;
                     stringBuilder.Append("</br>" + amount + "x "
-                        + item.ShopItem.Name 
+                        + item.ShopItem.Name
                         + "</br>Preis: "
                         + totalPrice + "€</br>");
                 }
@@ -815,13 +827,14 @@ namespace WPM_API.Controllers
             return null;
         }
 
-        private SmtpClient ConfigureSMTPClient(string receiverEmail) {
-            String password = _orderEmailOptions.Password;
+        private SmtpClient ConfigureSMTPClient(string receiverEmail)
+        {
+            String password = orderEmailOptions.Password;
             SmtpClient client = new SmtpClient();
-            client.Host = _orderEmailOptions.Host;
+            client.Host = orderEmailOptions.Host;
             client.Credentials = new System.Net.NetworkCredential(receiverEmail, password);
-            client.Port = Int32.Parse(_orderEmailOptions.Port);
-            client.EnableSsl = bool.Parse(_orderEmailOptions.EnableSsl);
+            client.Port = Int32.Parse(orderEmailOptions.Port);
+            client.EnableSsl = bool.Parse(orderEmailOptions.EnableSsl);
             return client;
         }
 

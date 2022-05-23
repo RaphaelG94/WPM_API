@@ -1,18 +1,18 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Net;
+using System.Net.Mail;
+using System.Text;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
 using WPM_API.Common.Utils;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Projections.Users;
 using WPM_API.Data.Models;
 using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Mail;
-using System.Text;
+using WPM_API.Options;
 using static WPM_API.Common.Constants;
 using ROLES = WPM_API.Models.Role;
 
@@ -21,6 +21,9 @@ namespace WPM_API.Controllers
     [Route("users")]
     public class UsersController : BasisController
     {
+        public UsersController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
 
         /// <summary>
         /// Retrieve all users.
@@ -53,7 +56,7 @@ namespace WPM_API.Controllers
                 users = UnitOfWork.Users.GetAll(UserIncludes.Systemhouse, UserIncludes.Customer, UserIncludes.Roles).Where(x => x.CustomerId.Equals(user.CustomerId)).ToList();
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<User>, List<UserViewModel>>(users), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<User>, List<UserViewModel>>(users), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -155,7 +158,7 @@ namespace WPM_API.Controllers
             user = UnitOfWork.Users.Get(user.Id, "Systemhouse", "Customer");
 
             // Customer was created and is returned.
-            var json = JsonConvert.SerializeObject(Mapper.Map<User, UserViewModel>(user), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<User, UserViewModel>(user), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -262,10 +265,10 @@ namespace WPM_API.Controllers
             var currentUser = GetCurrentUser();
 
             // Customer was created and is returned.
-            var json = JsonConvert.SerializeObject(Mapper.Map<User, UserViewModel>(toEdit), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<User, UserViewModel>(toEdit), serializerSettings);
             return new OkObjectResult(json);
         }
-        
+
         /// <summary>
         /// Delete an existing user.
         /// </summary>
@@ -313,7 +316,7 @@ namespace WPM_API.Controllers
             UnitOfWork.SaveChanges();
 
             // Customer was created and is returned.
-            var json = JsonConvert.SerializeObject(Mapper.Map<User, UserViewModel>(user), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<User, UserViewModel>(user), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -347,11 +350,11 @@ namespace WPM_API.Controllers
                 return BadRequest("ERROR: The user does not exist");
             }
 
-            SmtpClient mailClient = new SmtpClient(_sendMailCreds.Host, _sendMailCreds.Port);
-            NetworkCredential creds = new NetworkCredential(_sendMailCreds.Email, _sendMailCreds.Password);
+            SmtpClient mailClient = new SmtpClient(sendMailCreds.Host, sendMailCreds.Port);
+            NetworkCredential creds = new NetworkCredential(sendMailCreds.Email, sendMailCreds.Password);
             mailClient.Credentials = creds;
-            MailAddress from = new MailAddress(_sendMailCreds.Email, _sendMailCreds.DisplayName);
-            MailAddress to = new MailAddress(_agentEmailOptions.Email);
+            MailAddress from = new MailAddress(sendMailCreds.Email, sendMailCreds.DisplayName);
+            MailAddress to = new MailAddress(agentEmailOptions.Email);
             MailMessage message = new MailMessage(from, to);
             message.Subject = "BUG REPORT: " + data.Subject;
             message.BodyEncoding = System.Text.Encoding.UTF8;

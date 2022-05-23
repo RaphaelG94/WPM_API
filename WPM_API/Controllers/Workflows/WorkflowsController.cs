@@ -1,19 +1,22 @@
-﻿using WPM_API.Common;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using DATA = WPM_API.Data.DataContext.Entities;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Models;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers.Workflows
 {
     [Route("workflows")]
     public class WorkflowsController : BasisController
     {
+        public WorkflowsController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Create a new workflow entity and save it in the database
         /// </summary>
@@ -29,7 +32,7 @@ namespace WPM_API.Controllers.Workflows
                 newWorkflow.Description = data.Description;
                 newWorkflow.Name = data.Name;
                 UnitOfWork.SaveChanges();
-                var json = JsonConvert.SerializeObject(Mapper.Map<WorkflowViewModels>(newWorkflow), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<WorkflowViewModels>(newWorkflow), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)
@@ -47,7 +50,7 @@ namespace WPM_API.Controllers.Workflows
         public IActionResult GetWorkflows()
         {
             List<DATA.Workflow> workflows = UnitOfWork.Workflows.GetAll().ToList();
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<WorkflowViewModels>>(workflows), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<WorkflowViewModels>>(workflows), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -65,7 +68,7 @@ namespace WPM_API.Controllers.Workflows
                 UnitOfWork.SaveChanges();
 
                 // Return result
-                var json = JsonConvert.SerializeObject(Mapper.Map<WorkflowViewModels>(workflow), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<WorkflowViewModels>(workflow), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)

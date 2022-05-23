@@ -1,19 +1,22 @@
-﻿using WPM_API.Common;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using DATA = WPM_API.Data.DataContext.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Models;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers.Certification
 {
     [Route("certifications")]
     public class CertificationController : BasisController
     {
+        public CertificationController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Customer)]
         public IActionResult CreateCertification([FromBody] CertificationViewModels data)
@@ -24,7 +27,7 @@ namespace WPM_API.Controllers.Certification
                 newCertification.Name = data.Name;
                 newCertification.Description = data.Description;
                 UnitOfWork.SaveChanges();
-                var json = JsonConvert.SerializeObject(Mapper.Map<DATA.Certification, CertificationViewModels>(newCertification), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<DATA.Certification, CertificationViewModels>(newCertification), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)
@@ -38,7 +41,7 @@ namespace WPM_API.Controllers.Certification
         public IActionResult GetCertifications()
         {
             List<DATA.Certification> certifications = UnitOfWork.Certifications.GetAll().ToList();
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<CertificationViewModels>>(certifications), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<CertificationViewModels>>(certifications), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -52,7 +55,7 @@ namespace WPM_API.Controllers.Certification
                 cert.Description = editData.Description;
                 cert.Name = editData.Name;
                 UnitOfWork.SaveChanges();
-                var json = JsonConvert.SerializeObject(Mapper.Map<CertificationViewModels>(cert), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<CertificationViewModels>(cert), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)

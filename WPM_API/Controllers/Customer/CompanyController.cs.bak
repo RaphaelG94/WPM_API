@@ -64,7 +64,7 @@ namespace WPM_API.Controllers
 
             company = UnitOfWork.Companies.Get(company.Id);
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(company), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Company, CompanyViewModel>(company), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -98,7 +98,7 @@ namespace WPM_API.Controllers
             companies = Mapper.Map<List<Company>, List<CompanyViewModel>>(dbEntries);
             // Serialize and return the result
 >>>>>>> feature/Refactor-DB
-            var json = JsonConvert.SerializeObject(companies, _serializerSettings);
+            var json = JsonConvert.SerializeObject(companies, serializerSettings);
             return new OkObjectResult(json);
         }
     }

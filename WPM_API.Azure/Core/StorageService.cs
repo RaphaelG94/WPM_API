@@ -1,17 +1,13 @@
-﻿using AZURE = Microsoft.Azure.Management.Fluent;
+﻿using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Core;
 using Microsoft.Azure.Management.Storage;
-using Microsoft.Azure.Management.Storage.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.Azure.Management.Storage.Fluent;
-using System;
+using Microsoft.Azure.Management.Storage.Models;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using AZURE = Microsoft.Azure.Management.Fluent;
 
-namespace  WPM_API.Azure.Core
+namespace WPM_API.Azure.Core
 {
     public class StorageService
     {
@@ -48,20 +44,22 @@ namespace  WPM_API.Azure.Core
 
             // Create SAS key for one year
             SharedAccessBlobPolicy accessBlobPolicy = null;
-            if (permission == "read") {
+            if (permission == "read")
+            {
                 accessBlobPolicy = new SharedAccessBlobPolicy()
                 {
                     SharedAccessStartTime = DateTime.UtcNow.AddDays(-1),
                     SharedAccessExpiryTime = expireDate,
                     Permissions = SharedAccessBlobPermissions.Read | SharedAccessBlobPermissions.List
                 };
-            } else if (permission == "write")
+            }
+            else if (permission == "write")
             {
                 accessBlobPolicy = new SharedAccessBlobPolicy()
                 {
                     SharedAccessStartTime = DateTime.UtcNow.AddDays(-1),
                     SharedAccessExpiryTime = expireDate,
-                    Permissions = SharedAccessBlobPermissions.Write | SharedAccessBlobPermissions.Read |SharedAccessBlobPermissions.List
+                    Permissions = SharedAccessBlobPermissions.Write | SharedAccessBlobPermissions.Read | SharedAccessBlobPermissions.List
                 };
             }
 
@@ -69,10 +67,10 @@ namespace  WPM_API.Azure.Core
 
             CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
             CloudBlobContainer container = blobClient.GetContainerReference(folder);
-             
+
             sasKey = container.GetSharedAccessSignature(accessBlobPolicy, null);
 
-           return sasKey;
+            return sasKey;
         }
 
         public async Task<List<StorageAccount>> GetStorageAccounts(string subscriptionId, string ressourceGroupName)
@@ -97,38 +95,30 @@ namespace  WPM_API.Azure.Core
             return container;
         }
 
-        public Task<IStorageAccount> AddStorageAccountAsync(string subscriptionId, string ressourceGroupName, string storageAccountName, string storageAccountType, string location, string kind)
+        public async Task<IStorageAccount> AddStorageAccountAsync(string subscriptionId, string ressourceGroupName, string storageAccountName, string storageAccountType, string location, string kind)
         {
             var azure = AZURE.Azure.Configure()
                 .WithLogLevel(HttpLoggingDelegatingHandler.Level.Basic)
                 .Authenticate(_credentials)
                 .WithSubscription(subscriptionId);
 
+            var definition = azure.StorageAccounts.Define(storageAccountName)
+                .WithRegion(location)
+                .WithNewResourceGroup(ressourceGroupName)
+                .WithSku(StorageAccountSkuType.FromSkuName(Microsoft.Azure.Management.Storage.Fluent.Models.SkuName.Parse(storageAccountType)))
+                .WithOnlyHttpsTraffic();
+
             if (kind == "Storage")
             {
-                return azure.StorageAccounts.Define(storageAccountName)
-                .WithRegion(location)
-                .WithNewResourceGroup(ressourceGroupName)
-                .WithSku(StorageAccountSkuType.FromSkuName((Microsoft.Azure.Management.Storage.Fluent.Models.SkuName)Enum.Parse(typeof(Microsoft.Azure.Management.Storage.Fluent.Models.SkuName), storageAccountType, true)))
-                .WithGeneralPurposeAccountKind()
-                .WithOnlyHttpsTraffic()
-                .CreateAsync();
-            } else if (kind == "Storage V2")
+                return await definition.WithGeneralPurposeAccountKind().CreateAsync();
+            }
+            else if (kind == "Storage V2")
             {
-                return azure.StorageAccounts.Define(storageAccountName)
-                .WithRegion(location)
-                .WithNewResourceGroup(ressourceGroupName)
-                .WithSku(StorageAccountSkuType.FromSkuName((Microsoft.Azure.Management.Storage.Fluent.Models.SkuName)Enum.Parse(typeof(Microsoft.Azure.Management.Storage.Fluent.Models.SkuName), storageAccountType, true)))
-                .WithGeneralPurposeAccountKindV2()
-                .CreateAsync();
-            } else 
+                return await definition.WithGeneralPurposeAccountKindV2().CreateAsync();
+            }
+            else
             {
-                return azure.StorageAccounts.Define(storageAccountName)
-                .WithRegion(location)
-                .WithNewResourceGroup(ressourceGroupName)
-                .WithSku(StorageAccountSkuType.FromSkuName((Microsoft.Azure.Management.Storage.Fluent.Models.SkuName)Enum.Parse(typeof(Microsoft.Azure.Management.Storage.Fluent.Models.SkuName), storageAccountType, true)))
-                .WithBlobStorageAccountKind()
-                .CreateAsync();
+                return await definition.WithGeneralPurposeAccountKindV2().CreateAsync();
             }
         }
 

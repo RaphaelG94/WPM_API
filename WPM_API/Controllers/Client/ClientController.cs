@@ -1,30 +1,27 @@
 ﻿using Azure.Storage.Blobs.Models;
-using WPM_API.Azure;
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.Models;
-using WPM_API.TransferModels;
-using WPM_API.TransferModels.SmartDeploy;
-using WPM_API.Code;
-using WPM_API.Models;
-using WPM_API.Models.Inventory;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
+using WPM_API.Azure;
+using WPM_API.Code;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.Models;
+using WPM_API.Models;
+using WPM_API.Models.Inventory;
+using WPM_API.Options;
+using WPM_API.TransferModels;
+using WPM_API.TransferModels.SmartDeploy;
 using DATA = WPM_API.Data.DataContext.Entities;
 
 namespace WPM_API.Controllers.Client
@@ -32,6 +29,10 @@ namespace WPM_API.Controllers.Client
     [Route("customers/{customerId}/clients")]
     public class ClientController : BasisController
     {
+        public ClientController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         private string RandomPassword(int size = 0)
         {
             StringBuilder builder = new StringBuilder();
@@ -74,7 +75,7 @@ namespace WPM_API.Controllers.Client
             List<DATA.Client> dbEntries = UnitOfWork.Clients.GetAll("Base").Where(x => x.CustomerId == customerId).ToList();
             clients = Mapper.Map<List<DATA.Client>, List<ClientViewModel>>(dbEntries);
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(clients, _serializerSettings);
+            var json = JsonConvert.SerializeObject(clients, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -82,7 +83,7 @@ namespace WPM_API.Controllers.Client
         [Route("osSettings/{customerImageId}/{clientId}")]
         public IActionResult SetOSSettings([FromRoute] string customerImageId, [FromRoute] string clientId, [FromBody] OSSettingModel data)
         {
-            using ( var unitOfWork = CreateUnitOfWork())
+            using (var unitOfWork = CreateUnitOfWork())
             {
                 DATA.Client client = unitOfWork.Clients.Get(clientId);
                 CustomerImage customerImage = unitOfWork.CustomerImages.Get(customerImageId, "Unattend", "OEMPartition");
@@ -154,7 +155,8 @@ namespace WPM_API.Controllers.Client
                 if (PartitionUnattendFileList.Count == 1)
                 {
                     PartitionUnattendFile = PartitionUnattendFileList.First();
-                } else if (PartitionUnattendFileList.Count > 1)
+                }
+                else if (PartitionUnattendFileList.Count > 1)
                 {
                     foreach (ClientParameter toDelete in PartitionUnattendFileList)
                     {
@@ -173,7 +175,8 @@ namespace WPM_API.Controllers.Client
                     PathToImage.Value = customerImageStream.SubFolderName;
                     PathToImage.ClientId = clientId;
                     unitOfWork.ClientParameters.MarkForInsert(PathToImage);
-                } else
+                }
+                else
                 {
                     // Update Parameter
                     PathToImage.Value = customerImageStream.SubFolderName;
@@ -188,7 +191,8 @@ namespace WPM_API.Controllers.Client
                     TargetOSBuild.Value = customerImageStream.SubFolderName;
                     TargetOSBuild.ClientId = clientId;
                     unitOfWork.ClientParameters.MarkForInsert(TargetOSBuild);
-                } else
+                }
+                else
                 {
                     TargetOSBuild.Value = customerImageStream.SubFolderName;
                     unitOfWork.ClientParameters.MarkForUpdate(TargetOSBuild);
@@ -256,7 +260,8 @@ namespace WPM_API.Controllers.Client
                     client.KeyboardLayoutLinux = null;
                     client.TimeZoneLinux = null;
                     client.LanguagePackLinux = null;
-                } else if (customerImageStream.Type == "Linux")
+                }
+                else if (customerImageStream.Type == "Linux")
                 {
                     client.KeyboardLayoutLinux = data.KeyboardLayoutLinux;
                     client.TimeZoneLinux = data.TimeZoneLinux;
@@ -328,7 +333,7 @@ namespace WPM_API.Controllers.Client
                 client.LocalAdminUsername = DecryptString(client.LocalAdminUsername);
             }
 
-            var json = JsonConvert.SerializeObject(client, _serializerSettings);
+            var json = JsonConvert.SerializeObject(client, serializerSettings);
             return Ok(json);
         }
 
@@ -339,7 +344,7 @@ namespace WPM_API.Controllers.Client
         {
             List<DATA.Client> dbEntries = UnitOfWork.Clients.GetAll(ClientIncludes.GetAllIncludes()).Where(x => x.CustomerId == customerId).ToList();
             List<DatasheetViewModel> datasheetList = Mapper.Map<List<DATA.Client>, List<DatasheetViewModel>>(dbEntries);
-            var json = JsonConvert.SerializeObject(datasheetList, _serializerSettings);
+            var json = JsonConvert.SerializeObject(datasheetList, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -373,7 +378,7 @@ namespace WPM_API.Controllers.Client
 
             cp = UnitOfWork.ClientParameters.Get(cp.Id, "Client");
             var json = JsonConvert.SerializeObject(Mapper.Map<DATA.ClientParameter, ClientParameterViewModel>(cp),
-                _serializerSettings);
+                serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -401,7 +406,7 @@ namespace WPM_API.Controllers.Client
             }
 
             var json = JsonConvert.SerializeObject(Mapper.Map<DATA.ClientParameter, ClientParameterViewModel>(toEdit),
-                _serializerSettings);
+                serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -441,7 +446,7 @@ namespace WPM_API.Controllers.Client
                                         {
                                             fetchedClients.Remove(client);
                                         }
-                                    }                                    
+                                    }
                                 }
                             }
                             if (!(fetchedClients.Count() == 0 || fetchedClients.Count() > 1))
@@ -481,8 +486,8 @@ namespace WPM_API.Controllers.Client
                                 };
                             }
 
-                            newClient.SerialNumber = clientAdd.SerialNumber;                            
-    
+                            newClient.SerialNumber = clientAdd.SerialNumber;
+
                             unitOfWork.Clients.MarkForInsert(newClient, GetCurrentUser().Id);
                             unitOfWork.SaveChanges();
 
@@ -505,7 +510,7 @@ namespace WPM_API.Controllers.Client
                             }
                             unitOfWork.SaveChanges();
 
-                            var json = JsonConvert.SerializeObject(client, _serializerSettings);
+                            var json = JsonConvert.SerializeObject(client, serializerSettings);
                             return new OkObjectResult(json);
                         }
                         else
@@ -551,8 +556,9 @@ namespace WPM_API.Controllers.Client
                             }
                             return BadRequest(errorMsg);
                         }
-                    }                    
-                } else
+                    }
+                }
+                else
                 {
                     return BadRequest("ERROR: The user does not exist");
                 }
@@ -598,7 +604,7 @@ namespace WPM_API.Controllers.Client
                         return new NotFoundResult();
                     }
 
-                    dbClient.SerialNumber = clientEdit.SerialNumber;                    
+                    dbClient.SerialNumber = clientEdit.SerialNumber;
                     dbClient.Description = clientEdit.Description;
                     dbClient.UUID = clientEdit.Uuid;
                     dbClient.CustomerId = customerId;
@@ -662,9 +668,10 @@ namespace WPM_API.Controllers.Client
 
                 client = Mapper.Map<DATA.Client, ClientViewModel>(dbClient);
                 // Serialize and return the response
-                var json = JsonConvert.SerializeObject(client, _serializerSettings);
+                var json = JsonConvert.SerializeObject(client, serializerSettings);
                 return new OkObjectResult(json);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -686,7 +693,7 @@ namespace WPM_API.Controllers.Client
                 }
             }
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -703,7 +710,7 @@ namespace WPM_API.Controllers.Client
 
             List<ActivityLogViewModel> result = Mapper.Map<List<ActivityLogViewModel>>(client.ActivityLogs);
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return Ok(json);
         }
@@ -719,14 +726,14 @@ namespace WPM_API.Controllers.Client
             if (clientDbDatasheet == null)
                 return new NotFoundResult();
             FileRepository.FileRepository unattend =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             if (clientDbDatasheet.Unattend != null)
                 await unattend.DeleteFile(clientDbDatasheet.Unattend);
             string id = await unattend.UploadFile(file.OpenReadStream());
             clientDbDatasheet.Unattend = id;
             unitOfWork.Clients.MarkForUpdate(clientDbDatasheet, clientId);
             unitOfWork.SaveChanges();
-            var json = JsonConvert.SerializeObject(new { Id = id }, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -745,7 +752,7 @@ namespace WPM_API.Controllers.Client
             unitOfWork.SaveChanges();
             ClientViewModel updatedClient = new ClientViewModel();
             updatedClient = Mapper.Map<DATA.Client, ClientViewModel>(clientDbDatasheet);
-            var json = JsonConvert.SerializeObject(updatedClient, _serializerSettings);
+            var json = JsonConvert.SerializeObject(updatedClient, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -775,7 +782,7 @@ namespace WPM_API.Controllers.Client
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(software, _serializerSettings);
+            var json = JsonConvert.SerializeObject(software, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -821,7 +828,7 @@ namespace WPM_API.Controllers.Client
             InstallSoftware(customerId, clientId, softwareAssign.Id);
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -850,7 +857,7 @@ namespace WPM_API.Controllers.Client
             }
             */
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -886,7 +893,7 @@ namespace WPM_API.Controllers.Client
             }
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -949,7 +956,7 @@ namespace WPM_API.Controllers.Client
                 var client = unitOfWork.Clients.Get(clientId, "AssignedOptions");
                 bool PEOnly = false;
                 string OSType = String.Empty;
-                
+
                 client.AssignedOptions = new List<DATA.ClientOption>();
                 if (optionAssign != null)
                 {
@@ -978,21 +985,21 @@ namespace WPM_API.Controllers.Client
                         client.AssignedOptions.Add(clientOption);
                     }
 
-                    
+
                 }
                 unitOfWork.Clients.MarkForUpdate(client, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
                 // Serialize and return the response
-                var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), serializerSettings);
                 return new OkObjectResult(json);
-            }            
+            }
         }
-    
+
 
         [HttpPost]
         [Route("{clientId}/assignAdminOption")]
-        public IActionResult AssignAdminOption ([FromRoute] string customerId, [FromRoute] string clientId,
+        public IActionResult AssignAdminOption([FromRoute] string customerId, [FromRoute] string clientId,
             [FromBody] OptionAssignRefViewModel option)
         {
             using (var unitOfWork = CreateUnitOfWork())
@@ -1027,7 +1034,8 @@ namespace WPM_API.Controllers.Client
                     unitOfWork.Clients.MarkForUpdate(client, GetCurrentUser().Id);
                     unitOfWork.SaveChanges();
                     return Ok();
-                } else
+                }
+                else
                 {
                     return BadRequest("ERROR: No option sent in request");
                 }
@@ -1055,7 +1063,7 @@ namespace WPM_API.Controllers.Client
                 options.Add(o);
             });
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(options, _serializerSettings);
+            var json = JsonConvert.SerializeObject(options, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -1084,7 +1092,7 @@ namespace WPM_API.Controllers.Client
             }
             */
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -1116,7 +1124,7 @@ namespace WPM_API.Controllers.Client
             ClientsAndVMs resultModel = new ClientsAndVMs();
             resultModel.VMs = Mapper.Map<List<VirtualMachineViewModel>>(vms);
             resultModel.Clients = Mapper.Map<List<ClientViewModel>>(clients);
-            var json = JsonConvert.SerializeObject(resultModel, _serializerSettings);
+            var json = JsonConvert.SerializeObject(resultModel, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -1129,7 +1137,7 @@ namespace WPM_API.Controllers.Client
                 .Where(x => x.ClientId == clientId).ToList();
             var json = JsonConvert.SerializeObject(
                 Mapper.Map<List<DATA.ClientParameter>, List<ClientParameterViewModel>>(parameters),
-                _serializerSettings);
+                serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -1149,7 +1157,7 @@ namespace WPM_API.Controllers.Client
             using (var unitOfWork = CreateUnitOfWork())
             {
                 List<ParameterViewModel> parameters = new List<ParameterViewModel>();
-                FileRepository.FileRepository repository = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                FileRepository.FileRepository repository = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
 
                 DATA.Client client = unitOfWork.Clients.Get(clientId, ClientIncludes.Properties);
                 DATA.Script deviceOption = null;
@@ -1167,7 +1175,8 @@ namespace WPM_API.Controllers.Client
                             break;
                         }
                     }
-                } else
+                }
+                else
                 {
                     List<DATA.Script> deviceOptions = unitOfWork.Scripts.GetAll("Versions").ToList();
                     foreach (DATA.Script temp in deviceOptions)
@@ -1191,10 +1200,11 @@ namespace WPM_API.Controllers.Client
                     if (isAdminOption)
                     {
                         parameters = ScriptHelper.PrefillParameterWithDefaults(script, customerParameters, parameters, "From Customer", adminDeviceOption.OSType);
-                    } else
+                    }
+                    else
                     {
                         parameters = ScriptHelper.PrefillParameterWithDefaults(script, customerParameters, parameters, "From Customer", deviceOption.OSType);
-                    }                    
+                    }
                 }
 
                 //  Prefill from Base
@@ -1215,16 +1225,17 @@ namespace WPM_API.Controllers.Client
                 {
                     parameters =
                         ScriptHelper.PrefillParameterWithDefaults(script, clientParameters, parameters, "From Client", adminDeviceOption.OSType);
-                } else
+                }
+                else
                 {
                     parameters =
                         ScriptHelper.PrefillParameterWithDefaults(script, clientParameters, parameters, "From Client", deviceOption.OSType);
-                }                
+                }
 
                 // Serialize and return the response
-                var json = JsonConvert.SerializeObject(parameters, _serializerSettings);
+                var json = JsonConvert.SerializeObject(parameters, serializerSettings);
                 return new OkObjectResult(json);
-            }            
+            }
         }
 
         [HttpGet]
@@ -1251,7 +1262,7 @@ namespace WPM_API.Controllers.Client
                 else
                 {
                     // TODO: Check system; fix for live system
-                    azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                    azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                 }
                 string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                 CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -1274,7 +1285,7 @@ namespace WPM_API.Controllers.Client
                 {
                     return BadRequest("The hardware inventory file does not exist in Azure");
                 }
-                
+
                 string hwContent = await inventoryFile.DownloadTextAsync();
 
                 // FOR LAST LOGON
@@ -1288,7 +1299,7 @@ namespace WPM_API.Controllers.Client
                 try
                 {
                     JObject hwObject = JObject.Parse(hwContent);
-                    
+
                     foreach (JProperty property in hwObject.Properties())
                     {
                         if (property.Name == "HeaderInfo")
@@ -1336,7 +1347,7 @@ namespace WPM_API.Controllers.Client
                             var ramProperty = temp.Properties().Where(x => x.Name == "TotalPhysicalMemory").FirstOrDefault();
                             string ram = ramProperty.Value.ToString();
                             float ramInteger = float.Parse(ram);
-                            ramInteger = ramInteger / (1024 * 1024 * 1024);                            
+                            ramInteger = ramInteger / (1024 * 1024 * 1024);
                             double tempDouble = (double)ramInteger;
                             tempDouble = Math.Round(tempDouble, 0);
                             result.RAM = tempDouble.ToString();
@@ -1379,7 +1390,7 @@ namespace WPM_API.Controllers.Client
                 }
             }
             // Return result
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -1406,7 +1417,7 @@ namespace WPM_API.Controllers.Client
                 else
                 {
                     // TODO: Check system; fix for live system
-                    azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                    azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                 }
                 string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                 CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
@@ -1428,10 +1439,10 @@ namespace WPM_API.Controllers.Client
                     result.OSInventory = JToken.Parse(await osFile.DownloadTextAsync()).ToString(Formatting.Indented);
                 }
                 if (await baselineResult.ExistsAsync())
-                {                   
+                {
                     result.BaselineResult = JToken.Parse(await baselineResult.DownloadTextAsync()).ToString(Formatting.Indented);
                 }
-                string json = JsonConvert.SerializeObject(result, _serializerSettings);
+                string json = JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
             }
         }
@@ -1485,7 +1496,8 @@ namespace WPM_API.Controllers.Client
                 // Return file
                 FileStream result = new FileStream(filePath, FileMode.Open);
                 return File(result, System.Net.Mime.MediaTypeNames.Application.Octet, filePath);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("Error: " + e.Message);
             }
@@ -1494,7 +1506,7 @@ namespace WPM_API.Controllers.Client
         [HttpDelete]
         [Route("delete/{clientId}")]
         [Authorize(Policy = Constants.Policies.Customer)]
-        public IActionResult DeleteClient ([FromRoute] string clientId)
+        public IActionResult DeleteClient([FromRoute] string clientId)
         {
             try
             {
@@ -1545,22 +1557,24 @@ namespace WPM_API.Controllers.Client
                         unitOfWork.ClientParameters.MarkForDelete(param);
                         unitOfWork.SaveChanges();
                     }
-                    
+
 
                     try
                     {
                         unitOfWork.Clients.MarkForDelete(toDelete, GetCurrentUser().Id);
                         unitOfWork.SaveChanges();
-                    } catch (Exception exc)
+                    }
+                    catch (Exception exc)
                     {
                         return BadRequest("ERROR: " + exc.Message);
                     }
-                    
-                    var json = JsonConvert.SerializeObject(Mapper.Map<Models.ClientAddViewModelWeb>(toDelete), _serializerSettings);
+
+                    var json = JsonConvert.SerializeObject(Mapper.Map<Models.ClientAddViewModelWeb>(toDelete), serializerSettings);
 
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 string errMsg = "ERROR: " + e.Message;
                 if (e.InnerException != null)
@@ -1569,7 +1583,7 @@ namespace WPM_API.Controllers.Client
                 }
                 return BadRequest(errMsg);
             }
-        } 
+        }
 
         [HttpGet]
         [Route("getClientsMACAddresses/{clientId}")]
@@ -1590,7 +1604,8 @@ namespace WPM_API.Controllers.Client
                 }
 
                 return Ok(result);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -1598,7 +1613,7 @@ namespace WPM_API.Controllers.Client
 
         [HttpGet]
         [Route("getBaselineData/{clientId}")]
-        public IActionResult GetBaselineData([FromRoute]string clientId)
+        public IActionResult GetBaselineData([FromRoute] string clientId)
         {
             try
             {
@@ -1619,12 +1634,12 @@ namespace WPM_API.Controllers.Client
                     else
                     {
                         // TODO: Check system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     CloudStorageAccount customerStorageAcc = CloudStorageAccount.Parse(connectionString);
                     CloudBlobClient customerClient = customerStorageAcc.CreateCloudBlobClient();
-                    
+
                     CloudBlobContainer customerContainer = customerClient.GetContainerReference("csdp");
                     CloudBlockBlob file1 = customerContainer.GetBlockBlobReference("Customer_Repository/BaselineResults/" + clientId + "/" + client.BaseLineFile1);
                     CloudBlockBlob file2 = customerContainer.GetBlockBlobReference("Customer_Repository/BaselineResults/" + clientId + "/" + client.BaseLineFile2);
@@ -1659,9 +1674,10 @@ namespace WPM_API.Controllers.Client
                         }                        
                     }
                     */
-                }                    
+                }
                 return Ok();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -1682,7 +1698,7 @@ namespace WPM_API.Controllers.Client
                     LeaveOpen = true
                 };
                 using (CsvReader csvReader = new CsvReader(sr, csvConfig))
-                {                   
+                {
                     var content = csvReader.GetRecords<ImportClientsViewModel>();
                     using (var unitOfWork = CreateUnitOfWork())
                     {
@@ -1703,7 +1719,7 @@ namespace WPM_API.Controllers.Client
                                         if (MACAddresses.Contains(mac.Address))
                                         {
                                             clientExisted = true;
-                                            fetchedClients.Remove(client);                                            
+                                            fetchedClients.Remove(client);
                                         }
                                     }
                                 }
@@ -1723,7 +1739,7 @@ namespace WPM_API.Controllers.Client
                                     Description = el.Description,
                                     Name = el.Name,
                                     UUID = el.UUID,
-                                    CustomerId = customerId,                                    
+                                    CustomerId = customerId,
                                     // PreinstalledSoftwares = new List<DATA.SmartDeploy.PreinstalledSoftware>(),
                                     SerialNumber = el.Serialnumber
                                 };
@@ -1749,8 +1765,8 @@ namespace WPM_API.Controllers.Client
                                 }
                                 unitOfWork.SaveChanges();
                             }
-                        }                        
-                    }                                      
+                        }
+                    }
                 }
             }
             return Ok(); ;
@@ -1765,10 +1781,10 @@ namespace WPM_API.Controllers.Client
             public string Description { get; set; }
         }
 
-        private void GetBaseLineFileData (string fileName, string content)
+        private void GetBaseLineFileData(string fileName, string content)
         {
             JsonDocument doc = JsonDocument.Parse(content);
-            
+
         }
 
         private void WriteCSVData(List<DATA.InventoryCSV> inventory, string filePath)

@@ -1,19 +1,18 @@
-﻿using WPM_API.Common;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Diagnostics;
+using System.Net;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Entities.SmartDeploy;
 using WPM_API.Data.DataContext.Entities.Storages;
 using WPM_API.Data.Models;
+using WPM_API.Options;
 using WPM_API.TransferModels.SmartDeploy;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using WPM_API.Azure;
 using static WPM_API.FileRepository.FileRepository;
 
 namespace WPM_API.Controllers
@@ -22,6 +21,10 @@ namespace WPM_API.Controllers
     [Authorize(Policy = Constants.Policies.Customer)]
     public class CustomerSoftwareController : BasisController
     {
+        public CustomerSoftwareController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         public IActionResult GetCustomersSoftware([FromRoute] string customerId)
         {
@@ -34,7 +37,7 @@ namespace WPM_API.Controllers
                     result.AddRange(stream.StreamMembers);
                 }
 
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, _serializerSettings);
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(result, serializerSettings);
                 return Ok(json);
             }
         }
@@ -96,7 +99,7 @@ namespace WPM_API.Controllers
                     AzureCommunicationService azureCustomer;
                     if (csdp.Managed)
                     {
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     else
                     {
@@ -134,7 +137,7 @@ namespace WPM_API.Controllers
                     }
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(stream, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(stream, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -155,7 +158,7 @@ namespace WPM_API.Controllers
                 // unitOfWork.CustomerSoftwares.MarkForUpdate(toEdit, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
 
-                return Ok(Newtonsoft.Json.JsonConvert.SerializeObject(toEdit, _serializerSettings));
+                return Ok(Newtonsoft.Json.JsonConvert.SerializeObject(toEdit, serializerSettings));
             }
         }
 
@@ -172,7 +175,7 @@ namespace WPM_API.Controllers
                     stream.Icon = origin.Icon;
                 }
 
-                var json = JsonConvert.SerializeObject(streams, _serializerSettings);
+                var json = JsonConvert.SerializeObject(streams, serializerSettings);
                 return Ok(json);
             }
         }
@@ -210,7 +213,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     string connectionString = azureCustomer.StorageService().GetStorageAccConnectionString(csdp.SubscriptionId, csdp.ResourceGrpName, csdp.StorageAccount);
                     FileRepository.FileRepository csdpCustomer = new FileRepository.FileRepository(connectionString, "csdp/filerepository");
@@ -238,7 +241,7 @@ namespace WPM_API.Controllers
                     unitOfWork.CustomerSoftwareStreamss.MarkForDelete(toDelete, GetCurrentUser().Id);
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(toDelete, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(toDelete, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -268,7 +271,7 @@ namespace WPM_API.Controllers
 
             List<RevisionMessage> revisionMessages = UnitOfWork.RevisionMessages.GetAll().Where(x => x.SoftwareId == sw.Id).ToList();
 
-            var json = JsonConvert.SerializeObject(revisionMessages, _serializerSettings);
+            var json = JsonConvert.SerializeObject(revisionMessages, serializerSettings);
             return Ok(json);
         }
 
@@ -306,7 +309,7 @@ namespace WPM_API.Controllers
             SoftwareStream origin = UnitOfWork.SoftwareStreams.Get(stream.SoftwareStreamId, "Icon");
             stream.Icon = origin.Icon;
 
-            var json = JsonConvert.SerializeObject(stream, _serializerSettings);
+            var json = JsonConvert.SerializeObject(stream, serializerSettings);
             return Ok(json);
         }
 
@@ -396,7 +399,7 @@ namespace WPM_API.Controllers
                     {
                         sw.Customers = null;
                     }
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -453,7 +456,7 @@ namespace WPM_API.Controllers
                     }
                 }
             }
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
@@ -498,11 +501,11 @@ namespace WPM_API.Controllers
                     List<FileAndSAS> sasKeys = new List<FileAndSAS>();
 
                     // Create needed Azrue connections
-                    if (_appSettings == null || _connectionStrings == null)
+                    if (appSettings == null || connectionStrings == null)
                     {
                         return BadRequest("ERROR: Cannot fetch Bitstream Azure connection from config files");
                     }
-                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                     // TODO: upload Files from admin sw
                     AzureCommunicationService azureCustomer;
                     if (!csdp.Managed)
@@ -512,7 +515,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check for system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     foreach (Data.DataContext.Entities.File file in software.TaskInstall.Files)
                     {
@@ -556,7 +559,7 @@ namespace WPM_API.Controllers
                     unitOfWork.SaveChanges();
 
                     SoftwareViewModel result = Mapper.Map<SoftwareViewModel>(software);
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
             }
@@ -612,11 +615,11 @@ namespace WPM_API.Controllers
                     List<FileAndSAS> sasKeys = new List<FileAndSAS>();
 
                     // Create needed Azrue connections
-                    if (_appSettings == null || _connectionStrings == null)
+                    if (appSettings == null || connectionStrings == null)
                     {
                         return BadRequest("ERROR: Cannot fetch Bitstream Azure connection from config files");
                     }
-                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                    FileRepository.FileRepository csdpBitstreamRepo = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
                     // TODO: upload Files from admin sw
                     AzureCommunicationService azureCustomer;
                     if (!csdp.Managed)
@@ -626,7 +629,7 @@ namespace WPM_API.Controllers
                     else
                     {
                         // TODO: Check for system; fix for live system
-                        azureCustomer = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azureCustomer = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
                     foreach (Data.DataContext.Entities.File file in software.TaskInstall.Files)
                     {
@@ -677,7 +680,7 @@ namespace WPM_API.Controllers
                         unitOfWork.SaveChanges();
                     }
                     SoftwareViewModel result = Mapper.Map<SoftwareViewModel>(software);
-                    var json = JsonConvert.SerializeObject(result, _serializerSettings);
+                    var json = JsonConvert.SerializeObject(result, serializerSettings);
                     return Ok(json);
                 }
                 catch (Exception e)

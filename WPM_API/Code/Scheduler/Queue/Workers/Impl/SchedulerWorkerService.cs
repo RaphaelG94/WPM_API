@@ -1,15 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using WPM_API.Common;
-using WPM_API.Common.Logs;
-using WPM_API.Data.Files;
 using WPM_API.Code.Infrastructure;
 using WPM_API.Code.Scheduler.Attributes;
 using WPM_API.Code.Scheduler.DataModels;
 using WPM_API.Code.Scheduler.SchedulerActions;
 using WPM_API.Code.Scheduler.SchedulerModels;
+using WPM_API.Common;
+using WPM_API.Data.Files;
 
 namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
 {
@@ -69,7 +65,7 @@ namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
             }
             catch (Exception ex)
             {
-                LogHolder.MainLog.Error(ex, "Error processing scheduler - " + schedulerData.Id);
+                // LogHolder.MainLog.Error(ex, "Error processing scheduler - " + schedulerData.Id);
 
                 try
                 {
@@ -85,7 +81,7 @@ namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
                 }
                 catch (Exception e)
                 {
-                    LogHolder.MainLog.Error(e, "Error occured while saving scheduler data in failed state - " + schedulerData.Id);
+                    // LogHolder.MainLog.Error(e, "Error occured while saving scheduler data in failed state - " + schedulerData.Id);
                 }
 
                 if (isSync)

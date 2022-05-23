@@ -10,3 +10,15 @@ C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.C
 C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Common\obj\Debug\net6.0\refint\WPM_API.Common.dll
 C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.pdb
 C:\Users\rapha\Projects\repos\WPKM_API\WPM_API.Common\obj\Debug\net6.0\ref\WPM_API.Common.dll
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\bin\Debug\net6.0\WPM_API.Common.deps.json
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\bin\Debug\net6.0\WPM_API.Common.dll
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\bin\Debug\net6.0\WPM_API.Common.pdb
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.csproj.AssemblyReference.cache
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.AssemblyInfoInputs.cache
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.AssemblyInfo.cs
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.csproj.CoreCompileInputs.cache
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.dll
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\refint\WPM_API.Common.dll
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\WPM_API.Common.pdb
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API.Common\obj\Debug\net6.0\ref\WPM_API.Common.dll

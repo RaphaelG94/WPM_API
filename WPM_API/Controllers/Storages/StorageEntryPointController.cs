@@ -1,23 +1,24 @@
-﻿using WPM_API.Azure;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
 using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.DataContext.Entities.Storages;
 using WPM_API.Data.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Management.Monitor.Fluent.Models;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Storages
 {
     [Route("sep")]
     public class StorageEntryPointController : BasisController
     {
+        public StorageEntryPointController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Route("{customerId}")]
         [Authorize(Policy = Constants.Policies.Customer)]
@@ -33,7 +34,7 @@ namespace WPM_API.Controllers.Storages
                 customer.StorageEntryPoints = new List<StorageEntryPoint>();
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<StorageEntryPointViewModel>>(customer.StorageEntryPoints), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<StorageEntryPointViewModel>>(customer.StorageEntryPoints), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -59,15 +60,16 @@ namespace WPM_API.Controllers.Storages
                             return BadRequest("ERROR: No Cloud Entry Point is set yet");
                         }
                         azure = new AzureCommunicationService(cep.TenantId, cep.ClientId, cep.ClientSecret);
-                    } else
+                    }
+                    else
                     {
-                        azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
 
                     newSEP.Status = "Starting creating Storage Entry Point";
-                    
+
                     // Checking subscription
-                    
+
                     var subscription = await azure.SubscriptionService().GetSubscription(data.SubscriptionId);
                     if (subscription == null)
                     {
@@ -81,7 +83,8 @@ namespace WPM_API.Controllers.Storages
 
                     // Create storage account
                     var checkStorageAccount = await azure.StorageService().CheckNameAvailabilityAsync(data.StorageAccount);
-                    if (checkStorageAccount.IsAvailable != true) {
+                    if (checkStorageAccount.IsAvailable != true)
+                    {
                         newSEP.Status = "ERROR: The storage account name is already taken";
                         return BadRequest("ERROR: The storage account name is already taken");
                     }
@@ -92,7 +95,8 @@ namespace WPM_API.Controllers.Storages
                     connectionString = azure.StorageService().GetStorageAccConnectionString(data.SubscriptionId, data.ResourceGrpName, data.StorageAccount);
                     var container = await azure.StorageService().CreateBlobContainer(connectionString, data.BlobContainerName);
                     newSEP.Url = "https://" + newSEP.StorageAccount + ".blob.core.windows.net/" + newSEP.BlobContainerName;
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     newSEP.Status = "ERROR: Could not create StorageEntryPoint. " + e.Message;
                     return BadRequest("ERROR: Could not create StorageEntryPoint. " + e.Message);
@@ -162,7 +166,8 @@ namespace WPM_API.Controllers.Storages
                             Value = "https://" + newSEP.StorageAccount + ".blob.core.windows.net"
                         };
                         customer.Parameters.Add(azureBlobRoot);
-                    } else
+                    }
+                    else
                     {
                         azureBlobRoot.IsEditable = false;
                         azureBlobRoot.Value = "https://" + newSEP.StorageAccount + ".blob.core.windows.net";
@@ -193,9 +198,10 @@ namespace WPM_API.Controllers.Storages
                     unitOfWork.Customers.MarkForUpdate(customer, GetCurrentUser().Id);
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(Mapper.Map<StorageEntryPointViewModel>(newSEP), _serializerSettings);
+                    var json = JsonConvert.SerializeObject(Mapper.Map<StorageEntryPointViewModel>(newSEP), serializerSettings);
                     return new OkObjectResult(json);
-                } catch (Exception e)
+                }
+                catch (Exception e)
                 {
                     return BadRequest("ERROR: Could not save the Storage Entry Point! " + e.Message);
                 }
@@ -235,7 +241,7 @@ namespace WPM_API.Controllers.Storages
                     }
                     else
                     {
-                        azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                        azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
                     }
 
                     // Delete $LtSASwrite and $LtSASread if the SEP isCSDP
@@ -269,7 +275,7 @@ namespace WPM_API.Controllers.Storages
                             customer.StorageEntryPoints.Remove(toDelete);
                             unitOfWork.StorageEntryPoints.MarkForDelete(toDelete, GetCurrentUser().Id);
                             unitOfWork.SaveChanges();
-                            var json = JsonConvert.SerializeObject(Mapper.Map<StorageEntryPointViewModel>(toDelete), _serializerSettings);
+                            var json = JsonConvert.SerializeObject(Mapper.Map<StorageEntryPointViewModel>(toDelete), serializerSettings);
                             return new OkObjectResult(json);
                         }
                         else
@@ -282,7 +288,7 @@ namespace WPM_API.Controllers.Storages
                         customer.StorageEntryPoints.Remove(toDelete);
                         unitOfWork.StorageEntryPoints.MarkForDelete(toDelete, GetCurrentUser().Id);
                         unitOfWork.SaveChanges();
-                        var json = JsonConvert.SerializeObject(Mapper.Map<StorageEntryPointViewModel>(toDelete), _serializerSettings);
+                        var json = JsonConvert.SerializeObject(Mapper.Map<StorageEntryPointViewModel>(toDelete), serializerSettings);
                         return new OkObjectResult(json);
                     }
                 }
@@ -360,7 +366,8 @@ namespace WPM_API.Controllers.Storages
 
                 UnitOfWork.SaveChanges();
                 return Ok();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: Setting the SAS keys failed! " + e.Message);
             }

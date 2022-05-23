@@ -1,19 +1,22 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models.Release_Mgmt;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models.Release_Mgmt;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Releas_Mgmt
 {
     [Route("biosModels")]
     public class BIOSModelController : BasisController
     {
+        public BIOSModelController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpGet]
         [Authorize(Policy = Constants.Policies.Admin)]
         public IActionResult GetBIOSModels()
@@ -25,8 +28,8 @@ namespace WPM_API.Controllers.Releas_Mgmt
                 BIOSModelViewModel biosData = Mapper.Map<BIOSModelViewModel>(biosModel);
                 result.BiosModels.Add(biosData);
             }
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
-            return new OkObjectResult(json); 
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
+            return new OkObjectResult(json);
         }
 
         [HttpPost]

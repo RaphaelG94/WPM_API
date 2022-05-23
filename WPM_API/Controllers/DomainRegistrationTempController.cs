@@ -1,19 +1,22 @@
-﻿using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     [Route("domainRegistrationTemp")]
     public class DomainRegistrationTempController : BasisController
     {
+        public DomainRegistrationTempController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Admin)]
         public IActionResult CreateDomainRegistrationTemp([FromBody] DomainRegistrationTempViewModel addData)
@@ -26,7 +29,7 @@ namespace WPM_API.Controllers
                 UnitOfWork.SaveChanges();
 
                 // Return new data
-                var json = JsonConvert.SerializeObject(Mapper.Map<DomainRegistrationTempViewModel>(newDomain), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<DomainRegistrationTempViewModel>(newDomain), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)
@@ -40,7 +43,7 @@ namespace WPM_API.Controllers
         public IActionResult GetDomainRegistrationTemps()
         {
             List<DomainRegistrationTemp> domainRegistrations = UnitOfWork.DomainRegistrations.GetAll().ToList();
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<DomainRegistrationTempViewModel>>(domainRegistrations), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<DomainRegistrationTempViewModel>>(domainRegistrations), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -56,7 +59,7 @@ namespace WPM_API.Controllers
                 UnitOfWork.SaveChanges();
 
                 // Return edited data
-                var json = JsonConvert.SerializeObject(Mapper.Map<DomainRegistrationTempViewModel>(editDomain), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<DomainRegistrationTempViewModel>(editDomain), serializerSettings);
                 return new OkObjectResult(json);
             }
             catch (Exception e)

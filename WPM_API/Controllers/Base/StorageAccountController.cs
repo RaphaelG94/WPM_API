@@ -1,32 +1,34 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using WPM_API.Common;
-using WPM_API.Azure;
-using WPM_API.Models;
-using WPM_API.Data.DataContext.Entities;
 using Newtonsoft.Json;
-using AZURE = Microsoft.Azure.Management.ResourceManager.Models;
 using System.Linq.Dynamic.Core;
-using System;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers.Base
 {
     [Route("/storage-accounts")]
     public class StorageAccountController : BasisController
     {
+        public StorageAccountController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Create a new Azure storage Account and save it in database
         /// </summary>
         /// <param name="payload"></param>
         /// <returns></returns>
         [HttpPost]
-        [Authorize(Policy = Constants.Policies.Customer)] 
+        [Authorize(Policy = Constants.Policies.Customer)]
         public async Task<IActionResult> CreateStorageAccountAsync([FromBody] StorageAccountAddViewModel payload)
         {
-            using(var unitOfWork = CreateUnitOfWork())
+            using (var unitOfWork = CreateUnitOfWork())
             {
                 try
                 {
@@ -46,7 +48,7 @@ namespace WPM_API.Controllers.Base
                     unitOfWork.SaveChanges();
 
                     // Create response
-                    var json = JsonConvert.SerializeObject(Mapper.Map<StorageAccountViewModel>(newAccount), _serializerSettings);
+                    var json = JsonConvert.SerializeObject(Mapper.Map<StorageAccountViewModel>(newAccount), serializerSettings);
                     return new OkObjectResult(json);
 
                 }
@@ -82,17 +84,17 @@ namespace WPM_API.Controllers.Base
             else
             {
                 // TODO: Check system
-                azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
+                azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
             }
 
 
             var result = await azure.StorageService().CheckNameAvailabilityAsync(storageAccountName.Name);
 
-            if(result.IsAvailable.GetValueOrDefault())
+            if (result.IsAvailable.GetValueOrDefault())
             {
                 return new OkResult();
-            } 
-            else 
+            }
+            else
             {
                 return new BadRequestObjectResult(result.Message);
             }
@@ -112,7 +114,7 @@ namespace WPM_API.Controllers.Base
             List<StorageAccount> storageAccounts = UnitOfWork.StorageAccounts.GetAll().Where(x => x.CustomerId == customerId).ToList<StorageAccount>();
 
             // Serialize and return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<StorageAccount>, List<StorageAccountViewModel>>(storageAccounts), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<StorageAccount>, List<StorageAccountViewModel>>(storageAccounts), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -122,7 +124,7 @@ namespace WPM_API.Controllers.Base
         public async Task<IActionResult> GetStorageAccount([FromRoute] string subscriptionId, [FromRoute] string storageAccountId)
         {
             // Create communication service with Azure
-            AzureCommunicationService azure = new AzureCommunicationService(_appSettings.TenantId, _appSettings.ClientId, _appSettings.ClientSecret);
+            AzureCommunicationService azure = new AzureCommunicationService(appSettings.TenantId, appSettings.ClientId, appSettings.ClientSecret);
 
             var storageAccount = await azure.StorageService().GetStorageAccountAsync(storageAccountId);
             return NoContent();

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Threading;
-using WPM_API.Common;
-using WPM_API.Common.Logs;
-using WPM_API.Code.Scheduler.Queue.Workers;
+﻿using WPM_API.Code.Scheduler.Queue.Workers;
 
 namespace WPM_API.Code.Scheduler.Queue
 {
@@ -18,7 +14,7 @@ namespace WPM_API.Code.Scheduler.Queue
 
         public WorkerThread(string threadName, T notificationWorker)
         {
-            DelayMilliseconds = 5*60*1000;
+            DelayMilliseconds = 5 * 60 * 1000;
 
             NotificationWorker = notificationWorker;
 
@@ -48,7 +44,7 @@ namespace WPM_API.Code.Scheduler.Queue
                 }
                 catch (Exception ex)
                 {
-                    LogHolder.MainLog.Error(ex, "Error occured in notification worker - " + NotificationWorker.GetType());
+                    // LogHolder.MainLog.Error(ex, "Error occured in notification worker - " + NotificationWorker.GetType());
                 }
 
                 if (!WakeUpCalled)

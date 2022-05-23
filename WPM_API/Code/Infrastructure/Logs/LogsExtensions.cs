@@ -1,12 +1,5 @@
-﻿using WPM_API.Common.Logs;
+﻿using NLog.LayoutRenderers;
 using WPM_API.Code.Infrastructure.Logs.LogRenderers;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
-using NLog.LayoutRenderers;
-using NLog.Web;
 
 namespace WPM_API.Code.Infrastructure.Logs
 {
@@ -24,7 +17,7 @@ namespace WPM_API.Code.Infrastructure.Logs
             LayoutRenderer.Register<AspNetBuildDateLayoutRenderer>("custom-build-date");
             // env.ConfigureNLog("nlog.config");
 
-            LogHolder.Init(new NLogFactory());
+            // LogHolder.Init(new NLogFactory());
         }
     }
 }

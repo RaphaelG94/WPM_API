@@ -1,14 +1,9 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using WPM_API.Data.Extensions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System;
 using WPM_API.Data.DataContext.Entities.Storages;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class Customer : IEntity, IDeletable
     {
@@ -80,7 +75,7 @@ namespace  WPM_API.Data.DataContext.Entities
         public File Banner { get; set; }
 
         public string BannerId { get; set; }
-        public string  Email { get; set; }
+        public string Email { get; set; }
         public string Phone { get; set; }
         public string OpeningTimes { get; set; }
         public string CmdBtn1 { get; set; }
@@ -102,7 +97,7 @@ namespace  WPM_API.Data.DataContext.Entities
         public List<CustomerImageStream> CustomerImageStreams { get; set; }
         public string WinPEDownloadLink { get; set; }
         public string BannerLink { get; set; }
-        public string AutoRegisterPassword { get; set;}
+        public string AutoRegisterPassword { get; set; }
         public bool AutoRegisterClients { get; set; }
         public string OfficeConfig { get; set; }
         public bool UseCustomConfig { get; set; }
@@ -112,6 +107,6 @@ namespace  WPM_API.Data.DataContext.Entities
             throw new NotImplementedException();
         }
 
-        
+
     }
 }

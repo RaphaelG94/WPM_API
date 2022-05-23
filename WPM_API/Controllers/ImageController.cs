@@ -1,16 +1,15 @@
-﻿using WPM_API.Azure;
-using WPM_API.Common;
-using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using WPM_API.Azure;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 using File = WPM_API.Data.DataContext.Entities.File;
 
 namespace WPM_API.Controllers
@@ -19,6 +18,10 @@ namespace WPM_API.Controllers
     [Authorize(Policy = Constants.Policies.Systemhouse)]
     public class ImageController : BasisController
     {
+        public ImageController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         public IActionResult AddImage([FromBody] ImageViewModel data)
         {
@@ -32,7 +35,7 @@ namespace WPM_API.Controllers
                 {
                     newImage.OEMPartition = null;
                     newImage.OEMPartitionId = null;
-                }                
+                }
                 if (newImage.Unattend.Guid == "")
                 {
                     newImage.Unattend = null;
@@ -81,9 +84,9 @@ namespace WPM_API.Controllers
                 UnitOfWork.Images.MarkForInsert(newImage, GetCurrentUser().Id);
                 UnitOfWork.ImageStreams.MarkForUpdate(stream, GetCurrentUser().Id);
                 UnitOfWork.SaveChanges();
-                var json = JsonConvert.SerializeObject(Mapper.Map<ImageViewModel>(newImage), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<ImageViewModel>(newImage), serializerSettings);
                 return Ok(json);
-            }            
+            }
         }
 
         [HttpGet]
@@ -93,7 +96,7 @@ namespace WPM_API.Controllers
             List<Image> images = UnitOfWork.Images.GetAll("OEMPartition", "Unattend", "Systemhouses", "Customers")
                 .Where(x => x.ImageStreamId == streamId).ToList();
             List<ImageViewModel> result = Mapper.Map<List<ImageViewModel>>(images);
-            return Ok(JsonConvert.SerializeObject(result, _serializerSettings));
+            return Ok(JsonConvert.SerializeObject(result, serializerSettings));
         }
 
         [HttpPost]
@@ -110,7 +113,7 @@ namespace WPM_API.Controllers
                 }
                 unitOfWork.Images.MarkForUpdate(image, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
-                return Ok(JsonConvert.SerializeObject(image, _serializerSettings));
+                return Ok(JsonConvert.SerializeObject(image, serializerSettings));
             }
         }
 
@@ -129,7 +132,7 @@ namespace WPM_API.Controllers
 
                 unitOfWork.Images.MarkForUpdate(image, GetCurrentUser().Id);
                 unitOfWork.SaveChanges();
-                return Ok(JsonConvert.SerializeObject(image, _serializerSettings));
+                return Ok(JsonConvert.SerializeObject(image, serializerSettings));
             }
         }
 
@@ -147,7 +150,8 @@ namespace WPM_API.Controllers
                     UnitOfWork.SaveChanges();
                 }
                 return Ok();
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -157,7 +161,7 @@ namespace WPM_API.Controllers
         public IActionResult GetImages()
         {
             List<Image> images = UnitOfWork.Images.GetAll("OEMPartition", "Unattend").ToList();
-            var json = JsonConvert.SerializeObject(Mapper.Map<List<ImageViewModel>>(images), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<List<ImageViewModel>>(images), serializerSettings);
             return Ok(json);
         }
 
@@ -167,13 +171,13 @@ namespace WPM_API.Controllers
         {
             List<Image> result = UnitOfWork.Images.GetAll().Where(x => x.ImageStreamId == null).ToList();
 
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return Ok(json);
         }
 
         [HttpPost]
         [Route("edit")]
-        public IActionResult EditImage ([FromBody] ImageViewModel data)
+        public IActionResult EditImage([FromBody] ImageViewModel data)
         {
             using (var unitOfWork = CreateUnitOfWork())
             {
@@ -184,13 +188,13 @@ namespace WPM_API.Controllers
                     return BadRequest("ERROR: The OS image does not exist");
                 }
 
-                toEdit.BuildNr = data.BuildNr;                
+                toEdit.BuildNr = data.BuildNr;
                 toEdit.Name = data.Name;
                 toEdit.Update = data.Update;
                 toEdit.FileName = data.FileName;
                 toEdit.RevisionNumber = new Guid().ToString();
                 toEdit.DisplayRevisionNumber++;
-               
+
                 if (data.OEMPartition != null && data.OEMPartition.Guid == "")
                 {
                     data.OEMPartition = null;
@@ -202,7 +206,7 @@ namespace WPM_API.Controllers
                     data.Unattend = null;
                     toEdit.Unattend = null;
                     toEdit.UnattendId = null;
-                }                                
+                }
                 if (data.OEMPartition != null)
                 {
                     if (toEdit.OEMPartition != null)
@@ -267,7 +271,7 @@ namespace WPM_API.Controllers
                 unitOfWork.SaveChanges();
                 toEdit = UnitOfWork.Images.GetOrNull(data.Id, "Systemhouses", "Customers", "OEMPartition", "Unattend");
 
-                var json = JsonConvert.SerializeObject(Mapper.Map<ImageViewModel>(toEdit), _serializerSettings);
+                var json = JsonConvert.SerializeObject(Mapper.Map<ImageViewModel>(toEdit), serializerSettings);
                 return Ok(json);
             }
         }
@@ -292,7 +296,7 @@ namespace WPM_API.Controllers
                     unitOfWork.Files.MarkForDelete(toDelete.Unattend);
 
                     // Connect to Azure
-                    CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                    CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                     CloudBlobClient customerClient = storage.CreateCloudBlobClient();
                     CloudBlobContainer csdpContainer = customerClient.GetContainerReference("bsdp-v202011");
 
@@ -324,7 +328,7 @@ namespace WPM_API.Controllers
                     {
                         await blob.DeleteAsync();
                     }
-                    
+
                     toDelete.OEMPartitionId = null;
                     toDelete.UnattendId = null;
                     unitOfWork.Images.MarkForUpdate(toDelete, GetCurrentUser().Id);
@@ -334,10 +338,11 @@ namespace WPM_API.Controllers
                     unitOfWork.Images.MarkForDelete(toDelete);
                     unitOfWork.SaveChanges();
 
-                    var json = JsonConvert.SerializeObject(Mapper.Map<ImageViewModel>(toDelete), _serializerSettings);
+                    var json = JsonConvert.SerializeObject(Mapper.Map<ImageViewModel>(toDelete), serializerSettings);
                     return Ok(json);
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -348,8 +353,8 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> UploadOEMPartition(Microsoft.AspNetCore.Http.IFormFile file, [FromRoute] string subfolderPath)
         {
             // Connect to Bitstream Azure
-            AzureCommunicationService azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
-            CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+            AzureCommunicationService azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
+            CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
             CloudBlobClient customerClient = storage.CreateCloudBlobClient();
             CloudBlobContainer csdpContainer = customerClient.GetContainerReference("bsdp-v202011");
 
@@ -369,18 +374,18 @@ namespace WPM_API.Controllers
             FileRefModel result = new FileRefModel();
             result.Guid = file.FileName;
             result.Name = file.FileName;
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return Ok(json);
-        }        
+        }
 
         [HttpPost]
         [Route("unattend/{subfolderPath}")]
         public async Task<IActionResult> UploadUnattend(Microsoft.AspNetCore.Http.IFormFile file, [FromRoute] string subfolderPath)
         {
             // Connect to Bitstream Azure
-            AzureCommunicationService azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
-            CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+            AzureCommunicationService azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
+            CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
             CloudBlobClient customerClient = storage.CreateCloudBlobClient();
             CloudBlobContainer csdpContainer = customerClient.GetContainerReference("bsdp-v202011");
 
@@ -400,7 +405,7 @@ namespace WPM_API.Controllers
             FileRefModel result = new FileRefModel();
             result.Guid = file.FileName;
             result.Name = file.FileName;
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
 
             return Ok(json);
         }
@@ -412,8 +417,8 @@ namespace WPM_API.Controllers
             using (var unitOfWork = CreateUnitOfWork())
             {
                 // Connect to Bitstream Azure
-                AzureCommunicationService azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                AzureCommunicationService azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient customerClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = customerClient.GetContainerReference("bsdp-v202011");
 
@@ -428,7 +433,7 @@ namespace WPM_API.Controllers
                 Image image = unitOfWork.Images.Get(imageId, "Unattend");
 
                 // Delete file
-                CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("Image_Repository/" + subfolderPath + "/" + image.Unattend.Name);                                
+                CloudBlockBlob blob = csdpContainer.GetBlockBlobReference("Image_Repository/" + subfolderPath + "/" + image.Unattend.Name);
 
                 // Remove file from image
                 if (await blob.ExistsAsync())
@@ -436,7 +441,7 @@ namespace WPM_API.Controllers
                     await blob.DeleteAsync();
                 }
                 return Ok();
-            }            
+            }
         }
 
         [HttpDelete]
@@ -446,8 +451,8 @@ namespace WPM_API.Controllers
             using (var unitOfWork = CreateUnitOfWork())
             {
                 // Connect to Bitstream Azure
-                AzureCommunicationService azure = new AzureCommunicationService(_appSettings.DevelopmentTenantId, _appSettings.DevelopmentClientId, _appSettings.DevelopmentClientSecret);
-                CloudStorageAccount storage = CloudStorageAccount.Parse(_appSettings.LiveSystemConnectionString);
+                AzureCommunicationService azure = new AzureCommunicationService(appSettings.DevelopmentTenantId, appSettings.DevelopmentClientId, appSettings.DevelopmentClientSecret);
+                CloudStorageAccount storage = CloudStorageAccount.Parse(appSettings.LiveSystemConnectionString);
                 CloudBlobClient customerClient = storage.CreateCloudBlobClient();
                 CloudBlobContainer csdpContainer = customerClient.GetContainerReference("bsdp-v202011");
 

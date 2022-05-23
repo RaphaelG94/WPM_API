@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace  WPM_API.TransferModels.SmartDeploy
+namespace WPM_API.TransferModels.SmartDeploy
 {
     public class RuleViewModel : RuleAddViewModel
     {
@@ -17,7 +15,7 @@ namespace  WPM_API.TransferModels.SmartDeploy
         public string Type { get; set; }
         public List<string> Architecture { get; set; }
         public Boolean Successon { get; set; }
-        public FileRefViewModel Data { get; set; }
+        public FileRef Data { get; set; }
         public string Path { get; set; }
         public Boolean CheckVersionNr { get; set; }
         public string VersionNr { get; set; }

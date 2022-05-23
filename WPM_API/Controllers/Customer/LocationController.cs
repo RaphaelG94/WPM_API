@@ -1,20 +1,23 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using WPM_API.Models;
-using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Management.Network.Models;
+using Newtonsoft.Json;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
-using WPM_API.Data.Models;
 using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     [Route("locations")]
     public class LocationController : BasisController
     {
+        public LocationController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         [HttpPost]
         [Authorize(Policy = Constants.Roles.Customer)]
         public IActionResult AddLocation([FromBody] AddLocationViewModel locationAdd)
@@ -53,7 +56,7 @@ namespace WPM_API.Controllers
                 return BadRequest("Location could not be created. " + ex.Message);
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Location, AddLocationViewModel>(location), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Location, AddLocationViewModel>(location), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -70,7 +73,7 @@ namespace WPM_API.Controllers
             locations = Mapper.Map<List<Location>, List<LocationViewModel>>(dbEntries);
 
             // Serialize and return the result
-            var json = JsonConvert.SerializeObject(locations, _serializerSettings);
+            var json = JsonConvert.SerializeObject(locations, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -106,7 +109,7 @@ namespace WPM_API.Controllers
                 return BadRequest("Could not delete location. " + exc.Message);
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Location, AddLocationViewModel>(location), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Location, AddLocationViewModel>(location), serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -117,7 +120,7 @@ namespace WPM_API.Controllers
         /// <returns>AddLocation</returns>
         [HttpPut]
         [Authorize(Policy = Constants.Policies.Customer)]
-        public IActionResult UpdateLocation ([FromBody] AddLocationViewModel locationData)
+        public IActionResult UpdateLocation([FromBody] AddLocationViewModel locationData)
         {
             // Load location entity & check for existence
             Location toUpdate = UnitOfWork.Locations.Get(locationData.Id);
@@ -137,7 +140,8 @@ namespace WPM_API.Controllers
             if (locationData.Type == "in-cloud")
             {
                 toUpdate = UpdateInCloudLocation(toUpdate, locationData);
-            } else
+            }
+            else
             {
                 toUpdate = UpdateOnPremLocation(toUpdate, locationData);
             }
@@ -152,17 +156,17 @@ namespace WPM_API.Controllers
                 return BadRequest("The location could not be updated. " + exc.Message);
             }
 
-            var json = JsonConvert.SerializeObject(Mapper.Map<Location, AddLocationViewModel>(toUpdate), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<Location, AddLocationViewModel>(toUpdate), serializerSettings);
             return new OkObjectResult(json);
         }
 
-        private Location UpdateInCloudLocation (Location toUpdate, AddLocationViewModel data)
+        private Location UpdateInCloudLocation(Location toUpdate, AddLocationViewModel data)
         {
             toUpdate.AzureLocation = data.AzureLocation;
             return toUpdate;
         }
 
-        private Location UpdateOnPremLocation (Location toUpdate, AddLocationViewModel data)
+        private Location UpdateOnPremLocation(Location toUpdate, AddLocationViewModel data)
         {
             toUpdate.City = data.City;
             toUpdate.CityAbbreviation = data.CityAbbreviation;

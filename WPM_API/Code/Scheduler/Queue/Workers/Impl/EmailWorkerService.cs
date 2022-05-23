@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using WPM_API.Code.Scheduler.DataModels;
 using WPM_API.Common.Emails;
 using WPM_API.Common.Emails.Models;
 using WPM_API.Common.Files;
-using WPM_API.Common.Logs;
 using WPM_API.Data.DataContext.Entities;
-using WPM_API.Code.Scheduler.DataModels;
 
 namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
 {
@@ -72,7 +68,7 @@ namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
                 }
                 catch (Exception ex)
                 {
-                    LogHolder.MainLog.Error(ex, "Error send email - " + emailData.Id);
+                    // LogHolder.MainLog.Error(ex, "Error send email - " + emailData.Id);
 
                     try
                     {
@@ -93,7 +89,7 @@ namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
                     }
                     catch (Exception e)
                     {
-                        LogHolder.MainLog.Error(e, "Error occured while saving email data in failed state - " + emailData.Id);
+                        // LogHolder.MainLog.Error(e, "Error occured while saving email data in failed state - " + emailData.Id);
                     }
 
                     if (isSync)
@@ -112,7 +108,7 @@ namespace WPM_API.Code.Scheduler.Queue.Workers.Impl
                 ToEmailAddresses = MapEmailAddresses(m.ToEmailAddresses),
                 ToCcEmailAddresses = MapEmailAddresses(m.ToCcEmailAddresses),
                 ToBccEmailAddresses = MapEmailAddresses(m.ToBccEmailAddresses),
-                Attachments = m.NotificationEmailAttachments.Select(t 
+                Attachments = m.NotificationEmailAttachments.Select(t
                     => NotificationAttachment.Create(t.Attachment.FileName, _fileFactoryService.Attachments.GetFilePath(t.Attachment.GenFileName)))
             }).ToList();
         }

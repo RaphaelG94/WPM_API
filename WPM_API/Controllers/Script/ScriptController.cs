@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Dynamic.Core;
-using System.Threading.Tasks;
-using WPM_API.Common;
-using DATA = WPM_API.Data.DataContext.Entities;
-using WPM_API.Data.Models;
-using WPM_API.FileRepository;
-using WPM_API.Code;
-using WPM_API.Models;
+﻿using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Microsoft.CodeAnalysis.Options;
-using MimeKit;
-using Azure.Storage.Blobs.Models;
+using System.Linq.Dynamic.Core;
+using WPM_API.Code;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Data.Models;
+using WPM_API.Models;
+using WPM_API.Options;
+using DATA = WPM_API.Data.DataContext.Entities;
 
 
 /**************** Scripts not used atm. All functionality in device-options. *********************/
@@ -28,6 +23,10 @@ namespace WPM_API.Controllers
     [Route("scripts")]
     public class ScriptController : BasisController
     {
+        public ScriptController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
+        {
+        }
+
         /// <summary>
         /// Retrive all scripts.
         /// </summary>
@@ -41,7 +40,7 @@ namespace WPM_API.Controllers
                 .Where(x => x.Type.Equals(DATA.ScriptType.DomainOption)).ToList();
             scripts = Mapper.Map<List<DATA.Script>, List<ScriptViewModel>>(dbEntries);
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(scripts, _serializerSettings);
+            var json = JsonConvert.SerializeObject(scripts, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -63,7 +62,7 @@ namespace WPM_API.Controllers
 
                     // Connect to Azure script container
                     FileRepository.FileRepository repository =
-                        new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                        new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
 
                     // Fetch all relations
                     List<DATA.ScriptVersion> scriptVersions = toDelete.Versions;
@@ -106,7 +105,7 @@ namespace WPM_API.Controllers
                     }
 
                     // Delete ExecutionLogs
-                    foreach(DATA.ExecutionLog el in executionLogs)
+                    foreach (DATA.ExecutionLog el in executionLogs)
                     {
                         unitOfWork.ExecutionLogs.MarkForDelete(el, GetCurrentUser().Id);
                     }
@@ -119,7 +118,7 @@ namespace WPM_API.Controllers
                     }
 
                     // Delete Parameters
-                    foreach(DATA.Parameter parameter in parameters)
+                    foreach (DATA.Parameter parameter in parameters)
                     {
                         unitOfWork.Parameters.MarkForDelete(parameter, GetCurrentUser().Id);
                     }
@@ -130,7 +129,8 @@ namespace WPM_API.Controllers
 
                     return Ok();
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return BadRequest("ERROR: " + e.Message);
             }
@@ -146,8 +146,8 @@ namespace WPM_API.Controllers
         public async Task<IActionResult> AddScript([FromBody] ScriptAddViewModel scriptAdd)
         {
             FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                    _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository,
+                    appSettings.FileRepositoryFolder);
             DATA.Script newScript = UnitOfWork.Scripts.CreateEmpty(GetCurrentUser().Id);
             newScript.Description = scriptAdd.Description;
             newScript.Name = scriptAdd.Name;
@@ -176,7 +176,7 @@ namespace WPM_API.Controllers
                 Mapper.Map<DATA.Script, ScriptViewModel>(UnitOfWork.Scripts.Get(newScript.Id, "Versions"));
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(script, _serializerSettings);
+            var json = JsonConvert.SerializeObject(script, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -198,7 +198,7 @@ namespace WPM_API.Controllers
             UnitOfWork.SaveChanges();
             ScriptViewModel result = Mapper.Map<DATA.Script, ScriptViewModel>(UnitOfWork.Scripts.Get(script.Id, "Versions"));
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -215,8 +215,8 @@ namespace WPM_API.Controllers
             [FromBody] ScriptVersionAddViewModel scriptVersionAdd)
         {
             FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                    _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository,
+                    appSettings.FileRepositoryFolder);
             DATA.Script script = UnitOfWork.Scripts.Get(scriptId, "Versions");
             DATA.ScriptVersion newScriptVersion = new DATA.ScriptVersion();
             if (newScriptVersion.Attachments == null)
@@ -244,7 +244,7 @@ namespace WPM_API.Controllers
             ScriptViewModel result = Mapper.Map<DATA.Script, ScriptViewModel>(UnitOfWork.Scripts.Get(script.Id, "Versions"));
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(result, _serializerSettings);
+            var json = JsonConvert.SerializeObject(result, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -257,15 +257,15 @@ namespace WPM_API.Controllers
             DATA.Script script = UnitOfWork.Scripts.Get(scriptId, "Versions");
             DATA.ScriptVersion lastVersion = script.Versions.OrderBy(x => x.Number).Last();
             FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                    _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository,
+                    appSettings.FileRepositoryFolder);
             BlobDownloadResult downloadResult = await repository.GetBlobFile(lastVersion.ContentUrl).DownloadContentAsync();
             var scriptContent = downloadResult.Content.ToString();
             ScriptVersionContentViewModel scriptView = Mapper.Map<ScriptVersionContentViewModel>(lastVersion);
             scriptView.Content = scriptContent.ToString();
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(scriptView, _serializerSettings);
+            var json = JsonConvert.SerializeObject(scriptView, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -286,7 +286,7 @@ namespace WPM_API.Controllers
             DATA.ScriptVersion scriptVersion = script.Versions.Find(x => x.Number == number);
             scriptVersion = UnitOfWork.ScriptVersions.Get(scriptVersion.Id, "Attachments");
             FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
 
             string fileName = script.Name + "_v" + number + ".ps1";
             Dictionary<string, string> files = new Dictionary<string, string>();
@@ -308,23 +308,23 @@ namespace WPM_API.Controllers
             ScriptVersionViewModel scriptVersionView = Mapper.Map<DATA.ScriptVersion, ScriptVersionViewModel>(lastVersion);
 
             // Serialize and return the response
-            var json = JsonConvert.SerializeObject(scriptVersionView, _serializerSettings);
+            var json = JsonConvert.SerializeObject(scriptVersionView, serializerSettings);
             return new OkObjectResult(json);
         }
 
         /********************************************** Should be moved to some global utility class/controller. Especially temp endpoint. *******************************************************/
-//        private async Task<FileRef> PersistFileAsync(FileRef file)
-//        {
-//            if (file != null)
-//            {
-//                TempRepository tempRepository =
-//                    new TempRepository(_connectionStrings.FileRepository, _appSettings.TempFolder);
-//                string id = await tempRepository.MoveFileAsync(file.Id, _appSettings.FileRepositoryFolder, true);
-//                return new FileRef() {Id = id, Name = file.Name};
-//            }
-//
-//            return null;
-//        }
+        //        private async Task<FileRef> PersistFileAsync(FileRef file)
+        //        {
+        //            if (file != null)
+        //            {
+        //                TempRepository tempRepository =
+        //                    new TempRepository(connectionStrings.FileRepository, appSettings.TempFolder);
+        //                string id = await tempRepository.MoveFileAsync(file.Id, appSettings.FileRepositoryFolder, true);
+        //                return new FileRef() {Id = id, Name = file.Name};
+        //            }
+        //
+        //            return null;
+        //        }
 
 
         [HttpPost]
@@ -334,13 +334,13 @@ namespace WPM_API.Controllers
         {
             var newFile = UnitOfWork.Files.CreateEmpty();
             FileRepository.FileRepository temp =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository, _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             string id = await temp.UploadFile(file.OpenReadStream());
             newFile.Guid = id;
             newFile.Name = file.FileName;
             UnitOfWork.Files.MarkForInsert(newFile);
             UnitOfWork.SaveChanges();
-            var json = JsonConvert.SerializeObject(new {Id = id, Name = file.FileName}, _serializerSettings);
+            var json = JsonConvert.SerializeObject(new { Id = id, Name = file.FileName }, serializerSettings);
             return new OkObjectResult(json);
         }
 
@@ -354,9 +354,11 @@ namespace WPM_API.Controllers
             string scriptName = "";
             switch (actionName)
             {
-                case "SMB": scriptName = BitStreamScriptNames[0];
-                        break;
-                case "INVENTORY": scriptName = BitStreamScriptNames[1];
+                case "SMB":
+                    scriptName = BitStreamScriptNames[0];
+                    break;
+                case "INVENTORY":
+                    scriptName = BitStreamScriptNames[1];
                     break;
             }
             if (scriptName.Length == 0)
@@ -376,8 +378,8 @@ namespace WPM_API.Controllers
             DATA.ScriptVersion lastVersion = script.Versions.OrderBy(x => x.Number).Last();
             // Get Script from FileRepository
             FileRepository.FileRepository repository =
-                new FileRepository.FileRepository(_connectionStrings.FileRepository,
-                    _appSettings.FileRepositoryFolder);
+                new FileRepository.FileRepository(connectionStrings.FileRepository,
+                    appSettings.FileRepositoryFolder);
             string scriptContent = string.Empty;
             try
             {
@@ -410,14 +412,16 @@ namespace WPM_API.Controllers
                 orderIndex = lastOption.Order + 1;
             }
             List<DATA.Parameter> dataParameters = Mapper.Map<List<DATA.Parameter>>(parameters);
-            if (actionName == "SMB") {
+            if (actionName == "SMB")
+            {
                 foreach (DATA.Parameter parameter in dataParameters)
                 {
                     if (parameter.Key == "$CSDPShareName")
                     {
                         parameter.Value = storageData.ShareName;
                         UnitOfWork.SaveChanges();
-                    } else if (parameter.Key == "$CustomRepository")
+                    }
+                    else if (parameter.Key == "$CustomRepository")
                     {
                         parameter.Value = storageData.DataDriveLetter + ":\\";
                         UnitOfWork.SaveChanges();
@@ -442,7 +446,7 @@ namespace WPM_API.Controllers
             UnitOfWork.SaveChanges();
 
             // Serialize & return result
-            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), _serializerSettings);
+            var json = JsonConvert.SerializeObject(Mapper.Map<ClientViewModel>(client), serializerSettings);
             return new OkObjectResult(json);
         }
 

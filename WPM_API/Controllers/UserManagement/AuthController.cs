@@ -1,35 +1,30 @@
-using System;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Microsoft.AspNetCore.Authorization;
-using WPM_API.Models;
-using WPM_API.Code.Infrastructure.LogOn;
-using WPM_API.Models.Api.Token;
-using WPM_API.Common.Utils;
-using WPM_API.Common.Logs;
-using WPM_API.Data.DataContext.Entities;
-using System.Linq;
-using System.Net.Mail;
 using System.Net;
-using System.Text;
-using Microsoft.AspNetCore.Http;
-using WPM_API.Common;
+using System.Net.Mail;
 using System.Security.Claims;
-using System.Collections;
-using System.Collections.Generic;
+using System.Text;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Common;
+using WPM_API.Common.Utils;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Models;
+using WPM_API.Models.Api.Token;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     [Route("auth")]
     public class AuthController : BasisController
     {
-        // private readonly JwtIssuerOptions _jwtOptions;
-        private readonly ILogonManager _logonManager;
-
-        public AuthController(ILogonManager logonManager)
+        public AuthController(AppSettings appSettings, ConnectionStrings connectionStrings, OrderEmailOptions orderEmailOptions, AgentEmailOptions agentEmailOptions, SendMailCreds sendMailCreds, SiteOptions siteOptions, ILogonManager logonManager) : base(appSettings, connectionStrings, orderEmailOptions, agentEmailOptions, sendMailCreds, siteOptions, logonManager)
         {
-            _logonManager = logonManager;
         }
+
+        // private readonly JwtIssuerOptions _jwtOptions;
+
 
         /// <summary>
         /// Authenticate against the API to retrieve an auth token.
@@ -41,27 +36,31 @@ namespace WPM_API.Controllers
         public IActionResult Login([FromBody] CredentialsViewModel credentialsViewModel)
         {
             var account = UnitOfWork.Users.GetAccountByLoginOrNull(credentialsViewModel.Email);
-            account.UserName = account.UserName.Replace("Ü", "Ue");
-            account.UserName = account.UserName.Replace("ü", "ue");
-            account.UserName = account.UserName.Replace("Ö", "Oe");
-            account.UserName = account.UserName.Replace("ö", "oe");
-            account.UserName = account.UserName.Replace("Ä", "Ae");
-            account.UserName = account.UserName.Replace("ä", "ae");
+
             if (account == null || !PasswordHash.ValidatePassword(credentialsViewModel.Password, account.Password))
             {
-                LogHolder.MainLog.Info($"Authentication not successful (email unknown or password wrong).");
+                // LogHolder.MainLog.Info($"Authentication not successful (email unknown or password wrong).");
                 return Unauthorized();
+            }
+            else
+            {
+                account.UserName = account.UserName.Replace("Ü", "Ue");
+                account.UserName = account.UserName.Replace("ü", "ue");
+                account.UserName = account.UserName.Replace("Ö", "Oe");
+                account.UserName = account.UserName.Replace("ö", "oe");
+                account.UserName = account.UserName.Replace("Ä", "Ae");
+                account.UserName = account.UserName.Replace("ä", "ae");
             }
             if (!account.Active)
             {
-                LogHolder.MainLog.Info($"Authentication not successful (User " + account.Id + " is not Active).");
+                // LogHolder.MainLog.Info($"Authentication not successful (User " + account.Id + " is not Active).");
                 return Unauthorized();
             }
             DateTime? expires = DateTime.UtcNow.AddHours(2);
-            var token = _logonManager.GenerateToken(new LoggedClaims(account), expires);
+            var token = logonManager.GenerateToken(new LoggedClaims(account), expires);
             Response.Cookies.Append("aackjwt", token, new CookieOptions() { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
             var result = new TokenRetrieveModel { IsAuthenticated = true, Token = token, TokenExpiresAt = expires };
-            return new OkObjectResult(JsonConvert.SerializeObject(result, _serializerSettings));
+            return new OkObjectResult(JsonConvert.SerializeObject(result, serializerSettings));
         }
 
         [HttpGet]
@@ -80,7 +79,7 @@ namespace WPM_API.Controllers
         [HttpGet]
         [Route("resetPassword/{email}")]
         [AllowAnonymous]
-        public IActionResult ResetPassword ([FromRoute] string email)
+        public IActionResult ResetPassword([FromRoute] string email)
         {
             User user = UnitOfWork.Users.GetAll().Where(x => x.Email == email).FirstOrDefault();
             if (user == null)
@@ -94,10 +93,10 @@ namespace WPM_API.Controllers
             UnitOfWork.SaveChanges();
 
             // Inform user via mail
-            SmtpClient client = new SmtpClient(_sendMailCreds.Host, _sendMailCreds.Port);
-            NetworkCredential data = new NetworkCredential(_sendMailCreds.Email, _sendMailCreds.Password);
+            SmtpClient client = new SmtpClient(sendMailCreds.Host, sendMailCreds.Port);
+            NetworkCredential data = new NetworkCredential(sendMailCreds.Email, sendMailCreds.Password);
             client.Credentials = data;
-            MailAddress from = new MailAddress(_sendMailCreds.Email, _sendMailCreds.DisplayName);
+            MailAddress from = new MailAddress(sendMailCreds.Email, sendMailCreds.DisplayName);
             MailAddress to = new MailAddress(email);
             MailMessage message = new MailMessage(from, to);
             message.Body = new StringBuilder("Dear " + user.UserName + ",<br /><br />you requested a password reset.<br /> Your new password is: <h4>"

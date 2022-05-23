@@ -1,31 +1,67 @@
-using System;
-using Microsoft.Extensions.Options;
-using WPM_API.Options;
-using WPM_API.Code.Infrastructure.Api;
-using Microsoft.Extensions.DependencyInjection;
-using WPM_API.Data.Infrastructure;
-using WPM_API.Data.DataContext.Projections.Users;
-using WPM_API.Data.DataContext.Entities;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using WPM_API.Code.Infrastructure;
 using System.Security.Cryptography;
 using System.Text;
-using System.IO;
-using WPM_API.Code.Scheduler.Queue;
-using System.Collections.Generic;
+using WPM_API.Code.Infrastructure;
+using WPM_API.Code.Infrastructure.Api;
+using WPM_API.Code.Infrastructure.LogOn;
+using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.DataContext.Projections.Users;
+using WPM_API.Data.Infrastructure;
+using WPM_API.Options;
 
 namespace WPM_API.Controllers
 {
     public class BasisController : ControllerBaseApi
     {
-        protected AppSettings _appSettings => HttpContext.RequestServices.GetRequiredService<IOptions<AppSettings>>().Value;
-        protected ConnectionStrings _connectionStrings => HttpContext.RequestServices.GetRequiredService<IOptions<ConnectionStrings>>().Value;
-        protected JsonSerializerSettings _serializerSettings => new JsonSerializerSettings { Formatting = Formatting.Indented, ContractResolver = new CamelCasePropertyNamesContractResolver()};
-        protected OrderEmailOptions _orderEmailOptions => HttpContext.RequestServices.GetRequiredService<IOptions<OrderEmailOptions>>().Value;
-        protected AgentEmailOptions _agentEmailOptions => HttpContext.RequestServices.GetRequiredService<IOptions<AgentEmailOptions>>().Value;
-        protected SendMailCreds _sendMailCreds => HttpContext.RequestServices.GetRequiredService<IOptions<SendMailCreds>>().Value;
-        protected SiteOptions _siteOptions => HttpContext.RequestServices.GetRequiredService<IOptions<SiteOptions>>().Value;
+        //protected SiteOptions _siteOptions => HttpContext.RequestServices.GetRequiredService<IOptions<SiteOptions>>().Value;
+        protected readonly AppSettings appSettings;
+        protected readonly ConnectionStrings connectionStrings;
+        protected readonly OrderEmailOptions orderEmailOptions;
+        protected readonly AgentEmailOptions agentEmailOptions;
+        protected readonly SendMailCreds sendMailCreds;
+        protected readonly SiteOptions siteOptions;
+        protected readonly ILogonManager logonManager;
+        protected readonly UnitOfWork unitOfWork;
+        protected readonly JsonSerializerSettings serializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented, ContractResolver = new CamelCasePropertyNamesContractResolver() };
+
+        //public BasisController(
+        //    AppSettings appSettings,
+        //    ConnectionStrings connectionStrings,
+        //    OrderEmailOptions orderEmailOptions,
+        //    AgentEmailOptions agentEmailOptions,
+        //    SendMailCreds sendMailCreds,
+        //    SiteOptions siteOptions,
+        //    ILogonManager logonManager,
+        //    UnitOfWork unitOfWork)
+        //{
+        //    this.appSettings = appSettings;
+        //    this.connectionStrings = connectionStrings;
+        //    this.orderEmailOptions = orderEmailOptions;
+        //    this.agentEmailOptions = agentEmailOptions;
+        //    this.sendMailCreds = sendMailCreds;
+        //    this.siteOptions = siteOptions;
+        //    this.logonManager = logonManager;
+        //    this.unitOfWork = unitOfWork;
+        //}
+
+        public BasisController(
+            AppSettings appSettings,
+            ConnectionStrings connectionStrings,
+            OrderEmailOptions orderEmailOptions,
+            AgentEmailOptions agentEmailOptions,
+            SendMailCreds sendMailCreds,
+            SiteOptions siteOptions,
+            ILogonManager logonManager)
+        {
+            this.appSettings = appSettings;
+            this.connectionStrings = connectionStrings;
+            this.orderEmailOptions = orderEmailOptions;
+            this.agentEmailOptions = agentEmailOptions;
+            this.sendMailCreds = sendMailCreds;
+            this.siteOptions = siteOptions;
+            this.logonManager = logonManager;
+        }
 
         protected Boolean CurrentUserIsInRole(string role)
         {
@@ -39,7 +75,8 @@ namespace WPM_API.Controllers
 
         protected CloudEntryPoint GetCEP(String customerId = null, string cepId = null)
         {
-            using (var unitOfWork = CreateUnitOfWork()) {
+            using (var unitOfWork = CreateUnitOfWork())
+            {
                 CloudEntryPoint result = null;
                 if (string.IsNullOrEmpty(customerId))
                 {
@@ -56,7 +93,8 @@ namespace WPM_API.Controllers
                     if (cepId == null)
                     {
                         result = customer.CloudEntryPoints.Find(x => x.IsStandard == true);
-                    } else
+                    }
+                    else
                     {
                         result = customer.CloudEntryPoints.Find(x => x.Id == cepId);
                     }
@@ -130,7 +168,8 @@ namespace WPM_API.Controllers
             return AppDependencyResolver.Current.CreateUoWinCurrentThread();
         }
 
-        public class AgentsAuthenticationModel {
+        public class AgentsAuthenticationModel
+        {
             public string SerialNumber { get; set; }
             public List<string> MacAddresses { get; set; }
             public string OSType { get; set; }

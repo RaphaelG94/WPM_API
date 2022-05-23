@@ -1,11 +1,10 @@
-﻿using System.Net;
-using WPM_API.Common.Logs;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System.Net;
 
 namespace WPM_API.Code.Infrastructure.Api
 {
-    public class ApiExceptionFilter: ExceptionFilterAttribute
+    public class ApiExceptionFilter : ExceptionFilterAttribute
     {
         public override void OnException(ExceptionContext context)
         {
@@ -16,8 +15,8 @@ namespace WPM_API.Code.Infrastructure.Api
             {
                 errorCode = apiException.ErrorCode;
             }
-            
-            LogHolder.MainLog.Error(context.Exception, $"Api exception code: {errorCode}");
+
+            // LogHolder.MainLog.Error(context.Exception, $"Api exception code: {errorCode}");
 
             var errorMessage = context.Exception.Message;
             context.Result = new ObjectResult(ApiResult.Error(errorCode, errorMessage));
