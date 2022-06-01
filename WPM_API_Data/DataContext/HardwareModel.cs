@@ -1,15 +1,13 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext
+namespace WPM_API.Data.DataContext
 {
     public class HardwareModel : IEntity, IDeletable
     {
         [Key, Column("PK_HardwareModel")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public string Id { get; set; }
         public string Name { get; set; }
         public string Vendor { get; set; }
@@ -17,12 +15,12 @@ namespace  WPM_API.Data.DataContext
         public string ModelType { get; set; }
         public DateTime ProductionStart { get; set; }
         public DateTime ProductionEnd { get; set; }
-        public string CreatedByUserId { get; set; }
+        public string? CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
-        
+
     }
 }

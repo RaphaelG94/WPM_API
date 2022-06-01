@@ -41,7 +41,7 @@ namespace WPM_API.Controllers.Releas_Mgmt
 
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Admin)]
-        public IActionResult AddOSModel([FromBody] OSModelViewModel osModel)
+        public IActionResult AddOSModel([FromBody] OSModelAddViewModel osModel)
         {
             List<HardwareModel> hardwareModels = new List<HardwareModel>();
             foreach (string hardwareModelId in osModel.ValidModels)

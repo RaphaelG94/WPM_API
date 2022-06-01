@@ -1545,123 +1545,96 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("AutoRegisterPassword")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BannerId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("BannerLink")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Btn1Label")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Btn2Label")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Btn3Label")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Btn4Label")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CmdBtn1")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CmdBtn2")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CmdBtn3")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CmdBtn4")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CsdpContainer")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CsdpRoot")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Deletable")
                         .HasColumnType("bit");
 
                     b.Property<string>("DeletedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("IconLeftId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("IconRightId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("LtSASExpireDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("LtSASRead")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LtSASWríte")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MainCompanyId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OfficeConfig")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OpeningTimes")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SystemhouseId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("UpdatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -1671,7 +1644,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("WinPEDownloadLink")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -2734,7 +2706,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Guid")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -2748,7 +2719,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("TaskId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("VendorModelId")
@@ -3629,7 +3599,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DeletedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeletedDate")
@@ -3650,7 +3619,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UpdatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -3724,7 +3692,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CreatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
@@ -3735,14 +3702,12 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("DeletedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ExecutionLogId")
@@ -3756,14 +3721,12 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UpdatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Value")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -4334,38 +4297,30 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DeletedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DescriptionShort")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ManagedServiceLifecyclePrice")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ManagedServicePrice")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Price")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UpdatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -5765,6 +5720,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
             modelBuilder.Entity("WPM_API.Data.DataContext.HardwareModel", b =>
                 {
                     b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(450)")
                         .HasColumnName("PK_HardwareModel");
 
@@ -5772,14 +5728,12 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CreatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DeletedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DeletedDate")
@@ -5807,7 +5761,6 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UpdatedByUserId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -6295,32 +6248,27 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.File", "Banner")
                         .WithMany()
                         .HasForeignKey("BannerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.File", "IconLeft")
                         .WithMany()
                         .HasForeignKey("IconLeftId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.File", "IconRight")
                         .WithMany()
                         .HasForeignKey("IconRightId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.Company", "MainCompany")
                         .WithMany()
                         .HasForeignKey("MainCompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.Systemhouse", "Systemhouse")
                         .WithMany("Customer")
                         .HasForeignKey("SystemhouseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Banner");
 
@@ -6602,8 +6550,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.Task", "Task")
                         .WithMany("Files")
                         .HasForeignKey("TaskId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.VendorModel", null)
                         .WithMany("Files")

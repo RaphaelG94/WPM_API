@@ -66,4 +66,22 @@
     <ProjectReference Include="..\WPM_API_Data\WPM_API_Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Defaults.CSV" />
+    <None Remove="Resources\Fortigate60EPXE.conf" />
+    <None Remove="Resources\ScriptFolder\AddAzureCSEScript.ps1" />
+    <None Remove="Resources\ScriptFolder\Powershell.zip" />
+    <None Remove="Resources\ScriptFolder\ConfigureGPO.ps1" />
+    <None Remove="Resources\ScriptFolder\SmartDeployNoTouchInstaller.ps1" />
+    <EmbeddedResource Include="Resources\Fortigate60EPXE.conf" />
+    <EmbeddedResource Include="Resources\ScriptFolder\ConfigureGPO.ps1" />
+    <None Remove="Resources\ScriptFolder\CreateAD.ps1" />
+    <EmbeddedResource Include="Resources\ScriptFolder\CreateAD.ps1" />
+    <None Remove="Resources\ScriptFolder\ImportUser.ps1" />
+    <EmbeddedResource Include="Resources\ScriptFolder\ImportUser.ps1" />
+    <None Remove="Resources\ScriptFolder\BitStream_v1709.1806.14.zip" />
+    <EmbeddedResource Include="Resources\ScriptFolder\BitStream_v1709.1806.14.zip" />
+    <EmbeddedResource Include="Resources\WindowsVersions.json"></EmbeddedResource>
+  </ItemGroup>  
+  
 </Project>

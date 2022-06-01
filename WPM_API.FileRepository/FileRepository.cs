@@ -2,12 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage.Sas;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Compression;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace WPM_API.FileRepository
 {
@@ -62,7 +57,7 @@ namespace WPM_API.FileRepository
 
             //// Retrieve reference to a previously created container.
             //CloudBlobContainer container = blobClient.GetContainerReference(Folder);
-            
+
             //// Check Guid is not used.
             //CloudBlockBlob blockBlob = container.GetBlockBlobReference(g.ToString());
             //while (await blockBlob.ExistsAsync())
@@ -86,7 +81,7 @@ namespace WPM_API.FileRepository
 
             // Get a reference to a blob
             BlobClient blob = container.GetBlobClient(fileName);
-
+            await blob.DeleteIfExistsAsync();
             await blob.UploadAsync(fileStream);
 
             // OLD
@@ -114,7 +109,7 @@ namespace WPM_API.FileRepository
             container.CreateIfNotExists();
 
             // Get a reference to a blob
-            BlobClient blob = container.GetBlobClient(fileName);           
+            BlobClient blob = container.GetBlobClient(fileName);
 
             await blob.UploadAsync(fileStream);
 
@@ -144,9 +139,9 @@ namespace WPM_API.FileRepository
             container.CreateIfNotExists();
 
             // Get a reference to a blob
-            BlobClient blob = container.GetBlobClient(fileName);                       
+            BlobClient blob = container.GetBlobClient(fileName);
 
-            
+
 
             // Create or overwrite the "myblob" blob with contents from a local file.
             using (var fileStream = GenerateStreamFromString(content))
@@ -363,9 +358,11 @@ namespace WPM_API.FileRepository
             //var blobContainer = blobClient.GetContainerReference(Folder);
             //CloudBlockBlob file = null;
 
-            if (isCustomerCsdp) {
-                 file = blobContainerClient.GetBlobClient("filerepository/" + fileName);
-            } else
+            if (isCustomerCsdp)
+            {
+                file = blobContainerClient.GetBlobClient("filerepository/" + fileName);
+            }
+            else
             {
                 file = blobContainerClient.GetBlobClient(fileName);
             }
@@ -381,10 +378,11 @@ namespace WPM_API.FileRepository
                 sasBuilder.ExpiresOn = DateTime.UtcNow.AddMinutes(15);
                 sasBuilder.SetPermissions(BlobSasPermissions.Read);
                 return file.GenerateSasUri(sasBuilder).ToString();
-            } else
+            }
+            else
             {
                 return null;
-            }                        
+            }
         }
 
         public async Task<FileAndSAS> GetSASFile(string fileName, string guid)
@@ -432,7 +430,8 @@ namespace WPM_API.FileRepository
                 result.FileName = blob.Name;
                 result.SasUri = sas;
                 return result;
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 return null;
             }
@@ -452,13 +451,14 @@ namespace WPM_API.FileRepository
             {
                 BlobSasBuilder sasBuilder = new BlobSasBuilder()
                 {
-                    BlobContainerName= blobContainerClient.Name,
-                    Resource= "c"
+                    BlobContainerName = blobContainerClient.Name,
+                    Resource = "c"
                 };
                 sasBuilder.ExpiresOn = DateTime.UtcNow.AddHours(2);
                 sasBuilder.SetPermissions(BlobSasPermissions.Read);
                 return blobContainerClient.GenerateSasUri(sasBuilder).ToString();
-            } else
+            }
+            else
             {
                 return null;
             }
@@ -481,7 +481,7 @@ namespace WPM_API.FileRepository
             //return blobContainer.Uri + sas;
         }
 
-        public async Task<bool> FindFileAsync (string fileName)
+        public async Task<bool> FindFileAsync(string fileName)
         {
             fileName = fileName.Replace(" ", "");
 
@@ -495,7 +495,7 @@ namespace WPM_API.FileRepository
             //CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
             //CloudBlobContainer container = blobClient.GetContainerReference(Folder);
             //var blob = container.GetBlockBlobReference(fileName);
-            return await blob.ExistsAsync(); 
-        } 
+            return await blob.ExistsAsync();
+        }
     }
 }

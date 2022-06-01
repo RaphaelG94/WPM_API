@@ -171,7 +171,7 @@ namespace WPM_API.Controllers
                 customer.CreatedDate = DateTime.Now;
 
                 customer.Parameters = new List<Parameter>();
-                var FixedParams = GenerateFixedCustomerParams(customer);
+                var FixedParams = GenerateFixedCustomerParams(customer, customer.CreatedByUserId);
                 foreach (var param in FixedParams)
                 {
                     customer.Parameters.Add(param);
@@ -218,13 +218,13 @@ namespace WPM_API.Controllers
             return new OkObjectResult(json);
         }
 
-        private HashSet<Parameter> GenerateFixedCustomerParams(WPM_API.Data.DataContext.Entities.Customer customer)
+        private HashSet<Parameter> GenerateFixedCustomerParams(WPM_API.Data.DataContext.Entities.Customer customer, string createdByUserId)
         {
             var FixedParams = new HashSet<Parameter>();
             // FixedParams.Add(new Parameter{ Key = "$AzureBlobRoot", Value = customer.CsdpRoot, IsEditable = true});
-            FixedParams.Add(new Parameter { Key = "$LtSASread", Value = null, IsEditable = false });
-            FixedParams.Add(new Parameter { Key = "$LtSASwrite", Value = null, IsEditable = false });
-            FixedParams.Add(new Parameter { Key = "$CustomerName", Value = customer.Name, IsEditable = false });
+            FixedParams.Add(new Parameter { Key = "$LtSASread", Value = null, IsEditable = false, CreatedByUserId = createdByUserId });
+            FixedParams.Add(new Parameter { Key = "$LtSASwrite", Value = null, IsEditable = false, CreatedByUserId = createdByUserId });
+            FixedParams.Add(new Parameter { Key = "$CustomerName", Value = customer.Name, IsEditable = false, CreatedByUserId = createdByUserId });
             //  FixedParams.Add(new Parameter{ Key = "$CSDPcontainer", Value = customer.CsdpContainer, IsEditable = true });
 
             return FixedParams;
@@ -253,6 +253,7 @@ namespace WPM_API.Controllers
         private List<Default> fillDefaults()
         {
             var assembly = typeof(Program).GetTypeInfo().Assembly;
+            var resources = assembly.GetManifestResourceNames();
             Stream resource = assembly.GetManifestResourceStream("WPM_API.Resources.Defaults.CSV");
             var utf8WithoutBom = new UTF8Encoding(false);
             using (StreamReader reader = new StreamReader(resource, utf8WithoutBom))

@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace WPM_API.Models
+﻿namespace WPM_API.Models
 {
 
     public class CustomerViewModel
     {
-        public CustomerViewModel() {  }
+        public CustomerViewModel() { }
         public string Id { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
@@ -13,7 +11,7 @@ namespace WPM_API.Models
         public string OpeningTimes { get; set; }
         public SystemhouseRefViewModel Systemhouse { get; set; }
         public List<SubscriptionViewModel> Subscriptions { get; set; }
-        public List<ParameterViewModel> Parameters{ get; set; }
+        public List<ParameterViewModel> Parameters { get; set; }
         public FileRefModel IconLeft { get; set; }
         public FileRefModel IconRight { get; set; }
         public FileRefModel Banner { get; set; }
@@ -25,7 +23,7 @@ namespace WPM_API.Models
         public string Btn2Label { get; set; }
         public string Btn3Label { get; set; }
         public string Btn4Label { get; set; }
-        public string CsdpRoot { get; set; } 
+        public string CsdpRoot { get; set; }
         public string CsdpContainer { get; set; }
         public string LtSASRead { get; set; }
         public string LtSASWrite { get; set; }
@@ -64,28 +62,28 @@ namespace WPM_API.Models
     public class CustomerRefViewModel
     {
         public CustomerRefViewModel() { }
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string OpeningTimes { get; set; }
-        public FileRefModel IconRight { get; set; }
-        public FileRefModel IconLeft { get; set; }
-        public FileRefModel Banner { get; set; }
-        public string CmdBtn1 { get; set; }
-        public string CmdBtn2 { get; set; }
-        public string CmdBtn3 { get; set; }
-        public string CmdBtn4 { get; set; }
-        public string Btn1Label { get; set; }
-        public string Btn2Label { get; set; }
-        public string Btn3Label { get; set; }
-        public string Btn4Label { get; set; }
-        public string CsdpRoot { get; set; }
-        public string CsdpContainer { get; set; }
-        public string LtSASRead { get; set; }
-        public string LtSASWrite { get; set; }
-        public string WinPEDownloadLink { get; set; }
-        public string BannerLink { get; set; }
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? OpeningTimes { get; set; }
+        public FileRefModel? IconRight { get; set; }
+        public FileRefModel? IconLeft { get; set; }
+        public FileRefModel? Banner { get; set; }
+        public string? CmdBtn1 { get; set; }
+        public string? CmdBtn2 { get; set; }
+        public string? CmdBtn3 { get; set; }
+        public string? CmdBtn4 { get; set; }
+        public string? Btn1Label { get; set; }
+        public string? Btn2Label { get; set; }
+        public string? Btn3Label { get; set; }
+        public string? Btn4Label { get; set; }
+        public string? CsdpRoot { get; set; }
+        public string? CsdpContainer { get; set; }
+        public string? LtSASRead { get; set; }
+        public string? LtSASWrite { get; set; }
+        public string? WinPEDownloadLink { get; set; }
+        public string? BannerLink { get; set; }
     }
 
     public class CreateCustomerViewModel
@@ -121,10 +119,10 @@ namespace WPM_API.Models
     {
         public string Name { get; set; }
         public bool Exists { get; set; }
-        public string CsdpRoot { get; set; }
-        public string CsdpContainer { get; set; }
-        public string LtSASRead { get; set; }
-        public string LtSASWrite { get; set; }
-        public string WinPEDownloadLink { get; set; }
+        public string? CsdpRoot { get; set; }
+        public string? CsdpContainer { get; set; }
+        public string? LtSASRead { get; set; }
+        public string? LtSASWrite { get; set; }
+        public string? WinPEDownloadLink { get; set; }
     }
 }

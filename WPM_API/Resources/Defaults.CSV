@@ -1,0 +1,21 @@
+Basename,yourbase,base-wizard
+Resourcegroupname,yourgroup,base-wizard
+Location,westeurope,base-wizard
+Storage Account Name,yourstore,base-wizard
+Storagetype,Standard_LRS,base-wizard
+Virtual Network Name,yournetwork,base-wizard
+Virtual Network Prefix,10.10.0.0/16,base-wizard
+Subnet 1 Prefix,10.10.1.0/24,base-wizard
+Subnet 1 Name,frontend,base-wizard
+Subnet 2 Prefix,10.10.2.0/24,base-wizard
+VPN Name,yourvpn,base-wizard
+VPN Local Adress Range,192.168.1.0/24,base-wizard
+VPN Local Public IP,192.168.1.0/24,base-wizard
+VM Name,srv1ad,base-wizard
+VM Type,Standard_DS2,base-wizard
+VM User Name,bitstream-a,base-wizard
+VM System Disk Name,system,base-wizard
+VM System Disk Size,150,base-wizard
+VM Data Disk Name,system,base-wizard
+VM Data Disk Size,150,base-wizard
+DNSForwarder,8.8.8.8,base-prop

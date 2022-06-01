@@ -35,10 +35,16 @@ namespace WPM_API.Controllers.Releas_Mgmt
 
         [HttpPost]
         [Authorize(Policy = Constants.Policies.Admin)]
-        public IActionResult AddHardwareModel([FromBody] HardwareModelViewModel hardwareModel)
+        public IActionResult AddHardwareModel([FromBody] HardwareModelAddViewModel hardwareModel)
         {
             HardwareModel newModel = new HardwareModel();
-            newModel = Mapper.Map<HardwareModel>(hardwareModel);
+            newModel.ModelFamily = hardwareModel.ModelFamily;
+            newModel.Vendor = hardwareModel.Vendor;
+            newModel.ModelType = hardwareModel.ModelType;
+            newModel.Name = hardwareModel.Name;
+            newModel.ProductionStart = DateTime.Parse(hardwareModel.ProductionStart);
+            newModel.ProductionEnd = DateTime.Parse(hardwareModel.ProductionEnd);
+            // newModel = Mapper.Map<HardwareModel>(hardwareModel);
             UnitOfWork.HardwareModels.MarkForInsert(newModel, GetCurrentUser().Id);
             UnitOfWork.SaveChanges();
             var json = JsonConvert.SerializeObject(Mapper.Map<HardwareModelViewModel>(newModel), serializerSettings);

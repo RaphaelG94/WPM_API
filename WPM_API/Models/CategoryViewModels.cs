@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace WPM_API.Models
+﻿namespace WPM_API.Models
 {
     public class CategoryViewModel
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
         public string Name { get; set; }
     }
 
@@ -18,6 +13,6 @@ namespace WPM_API.Models
 
     public class CategoryRefViewModel
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
     }
 }

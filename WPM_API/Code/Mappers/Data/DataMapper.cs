@@ -24,6 +24,15 @@ namespace WPM_API.Code.Mappers.Data
     {
         public DataMapper()
         {
+            CreateMap<OSModelAddViewModel, OSModel>()
+                .ForMember(dest => dest.ReleaseDate, opt => opt.MapFrom(src => DateTime.Parse(src.ReleaseDate)))
+                .ForMember(dest => dest.SupportEnd, opt => opt.MapFrom(src => src.SupportEnd == "" ? default(DateTime?) : DateTime.Parse(src.SupportEnd)))
+                .Ignore(x => x.CreatedByUserId)
+                .Ignore(x => x.CreatedDate)
+                .Ignore(x => x.UpdatedByUserId)
+                .Ignore(x => x.UpdatedDate)
+                .Ignore(x => x.DeletedByUserId)
+                .Ignore(x => x.DeletedDate);
             CreateMap<File, FileRefViewModel>().ReverseMap();
             CreateMap<RuleType, TypeViewModel>().ReverseMap();
             CreateMap<Location, AddLocationViewModel>().ReverseMap();
@@ -141,7 +150,7 @@ namespace WPM_API.Code.Mappers.Data
             CreateMap<User, UserViewModel>()
                 .Map(m => m.Roles, d => string.Join(", ", d.UserRoles.Select(c => c.Role.Name)))
                 .Map(m => m.Name, m => m.UserName).Map(m => m.Admin, m => m.Admin);
-            //CreateMap<Systemhouse, SystemhouseViewModel>().ReverseMap();
+            CreateMap<Systemhouse, SystemhouseViewModel>().ReverseMap();
             CreateMap<Systemhouse, SystemhouseRefViewModel>().ReverseMap();
             CreateMap<Customer, CustomerNameViewModel>()
                 .ForMember(

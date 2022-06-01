@@ -494,18 +494,23 @@ namespace WPM_API.Controllers
         [Authorize(Policy = Constants.Policies.Systemhouse)]
         public IActionResult CheckCustomerExistsByName([FromBody] CustomerNameViewModel customerData)
         {
-            WPM_API.Data.DataContext.Entities.Customer customer = UnitOfWork.Customers.GetAll().Where(x => string.Compare(x.Name, customerData.Name) == 0).SingleOrDefault();
-            if (customer == null)
+            using (var unitOfWork = CreateUnitOfWork())
             {
-                customerData.Exists = false;
-            }
-            else
-            {
-                customerData.Exists = true;
-            }
+                Customer customer = unitOfWork.Customers.GetAll()
+                .Where(x => string.Compare(x.Name, customerData.Name) == 0)
+                .SingleOrDefault();
+                if (customer == null)
+                {
+                    customerData.Exists = false;
+                }
+                else
+                {
+                    customerData.Exists = true;
+                }
 
-            var json = JsonConvert.SerializeObject(customerData);
-            return new OkObjectResult(json);
+                var json = JsonConvert.SerializeObject(customerData);
+                return new OkObjectResult(json);
+            }
         }
 
         [Route("add-parameter/check-unique")]

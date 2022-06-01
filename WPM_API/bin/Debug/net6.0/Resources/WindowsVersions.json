@@ -1,0 +1,125 @@
+﻿{
+  "VersionsClient": [
+    {
+      "Name": "Win 7",
+      "BuildNr": "7601",
+      "ReleaseId": "NT 6.1"
+    },
+    {
+      "Name": "Win 8",
+      "BuildNr": "9200",
+      "ReleaseId": "NT 6.2",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 8.1",
+      "BuildNr": "9600",
+      "ReleaseId": "NT 6.3",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "10240",
+      "ReleaseId": "1507",
+      "Hint": "Prüfen ReleaseId 1507 oder NT 10.0"
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "10586",
+      "ReleaseId": "1511",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "14393",
+      "ReleaseId": "1607",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "15063",
+      "ReleaseId": "1703",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "16299",
+      "ReleaseId": "1709",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "17134",
+      "ReleaseId": "1803",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "17763",
+      "ReleaseId": "1809",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "18362",
+      "ReleaseId": "1903",
+      "Hint": ""
+    },    
+    {
+      "Name": "Win 10",
+      "BuildNr": "18363",
+      "ReleaseId": "1909",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "19041",
+      "ReleaseId": "2004",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "19042",
+      "ReleaseId": "20H2",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "19043",
+      "ReleaseId": "21H1",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 10",
+      "BuildNr": "19044",
+      "ReleaseId": "21H2",
+      "Hint": ""
+    },
+    {
+      "Name": "Win 11",
+      "BuildNr": "22000",
+      "ReleaseId": "21H2",
+      "Hint": ""
+    }
+  ],
+  "VersionsServer": [
+    {
+      "Name": "Win Server 2016",
+      "BuildNr": "14393",
+      "ReleaseId": "1607",
+      "Hint": ""
+    },
+    {
+      "Name": "Win Server 2019",
+      "BuildNr": "17763",
+      "ReleaseId": "1809",
+      "Hint": ""
+    },
+    {
+      "Name": "Win Server 2022",
+      "BuildNr": "20348",
+      "ReleaseId": "21H2",
+      "Hint": ""
+    }
+  ]
+}

@@ -964,3 +964,4 @@ C:\Users\rapha\Projects\repos\WPM_API\WPM_API\obj\Debug\net6.0\WPM_API.genruntim
 C:\Users\rapha\Projects\repos\WPM_API\WPM_API\obj\Debug\net6.0\ref\WPM_API.dll
 C:\Users\rapha\Projects\repos\WPM_API\WPM_API\bin\Debug\net6.0\System.Security.Cryptography.Pkcs.dll
 C:\Users\rapha\Projects\repos\WPM_API\WPM_API\bin\Debug\net6.0\runtimes\win\lib\net6.0\System.Security.Cryptography.Pkcs.dll
+C:\Users\rapha\Projects\repos\WPM_API\WPM_API\bin\Debug\net6.0\Resources\WindowsVersions.json

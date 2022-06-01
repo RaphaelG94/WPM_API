@@ -152,6 +152,7 @@ var tokenValidationParameters = new TokenValidationParameters
     ClockSkew = TimeSpan.Zero
 };
 
+// Validation parameters for local jwt token
 builder.Services.Configure<TokenAuthOptions>(tokenAuthOptions =>
 {
     tokenAuthOptions.Audience = tokenValidationParameters.ValidAudience;
@@ -161,24 +162,24 @@ builder.Services.Configure<TokenAuthOptions>(tokenAuthOptions =>
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(o =>
-            {
-                o.TokenValidationParameters = tokenValidationParameters;
-            })
-            .AddJwtBearer("AzureADB2C", options =>
-            {
-                options.Authority = "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/";
-                options.Audience = "97ced207-3b0d-446c-a189-0d8aecde0502";
-                options.MetadataAddress =
-                "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=B2C_1_bitstreamtest_signup_signin";
-            });
+    .AddJwtBearer(o =>
+    {
+        o.TokenValidationParameters = tokenValidationParameters;
+    })
+    .AddJwtBearer("AzureADB2C", options =>
+    {
+        options.Authority = "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/";
+        options.Audience = "http://localhost:7291";
+        options.MetadataAddress =
+            "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=B2C_1_bitstreamtest_signup_signin";
+    });
 
 builder.Services.AddAuthorization(auth =>
 {
     auth.DefaultPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
-        // .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
-        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
+        //.AddAuthenticationSchemes("AzureADB2C")
         .Build();
 
     // Admin = Adminflag + Systemhouse_Manager
@@ -186,7 +187,8 @@ builder.Services.AddAuthorization(auth =>
         context => context.User.HasClaim(claim =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse)))
             && context.User.HasClaim(claim => (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
-        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        //.AddAuthenticationSchemes("AzureADB2C")
         .Build());
 
     // Systemhouse_Manager = Admin or Systemhouse_Manager
@@ -194,6 +196,7 @@ builder.Services.AddAuthorization(auth =>
         context => context.User.HasClaim(claim =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse))
             || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
+        //.AddAuthenticationSchemes("AzureADB2C")
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
         .Build());
 
@@ -203,7 +206,8 @@ builder.Services.AddAuthorization(auth =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Customer))
             || (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse))
             || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
-        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
+        //.AddAuthenticationSchemes("AzureADB2C")
         .Build());
 });
 
@@ -219,11 +223,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
 app.UseAuthentication();
-
 app.UseMiddleware<PopulateClaimsMiddleware>();
+app.UseAuthorization();
 
+AppDependencyResolver.Init(app.Services);
 
 app.MapControllers();
 
