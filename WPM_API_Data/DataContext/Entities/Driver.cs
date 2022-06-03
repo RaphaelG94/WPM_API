@@ -1,11 +1,8 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class Driver : IEntity, IDeletable
     {
@@ -20,9 +17,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public string Vendor { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
         public List<DriverShopItem> DriverShopItems { get; set; }
         public string ContainerName { get; set; }

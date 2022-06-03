@@ -154,7 +154,7 @@ namespace WPM_API.Controllers.Base
             // TODO: Get files from CSDP
             FileRepository.FileRepository software = new FileRepository.FileRepository(connectionStrings.FileRepository, appSettings.FileRepositoryFolder);
             var file = UnitOfWork.Files.Get(fileId);
-            if (file.Guid != null)
+            if (file.Guid != null && file.Guid != "")
             {
                 var blob = software.GetBlobFile(file.Guid);
                 var ms = new MemoryStream();
@@ -193,21 +193,21 @@ namespace WPM_API.Controllers.Base
 
         public class ImageStreamViewModel
         {
-            public string Id { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public string DescriptionShort { get; set; }
-            public string Architecture { get; set; }
-            public string Language { get; set; }
-            public string Website { get; set; }
-            public string Vendor { get; set; }
-            public FileRefModel Icon { get; set; }
-            public List<ImageViewModel> Images { get; set; }
-            public string SubFolderName { get; set; }
-            public string Edition { get; set; }
-            public string Type { get; set; }
-            public string PrefixUrl { get; set; }
-            public string SASKey { get; set; }
+            public string? Id { get; set; }
+            public string? Name { get; set; }
+            public string? Description { get; set; }
+            public string? DescriptionShort { get; set; }
+            public string? Architecture { get; set; }
+            public string? Language { get; set; }
+            public string? Website { get; set; }
+            public string? Vendor { get; set; }
+            public FileRefModel? Icon { get; set; }
+            public List<ImageViewModel>? Images { get; set; }
+            public string? SubFolderName { get; set; }
+            public string? Edition { get; set; }
+            public string? Type { get; set; }
+            public string? PrefixUrl { get; set; }
+            public string? SASKey { get; set; }
         }
     }
 }

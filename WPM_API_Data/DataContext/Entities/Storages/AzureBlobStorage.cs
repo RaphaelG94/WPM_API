@@ -22,9 +22,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public ResourceGroup RessourceGroup { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
         public string CustomerId { get; set; }
         public Customer Customer { get; set; }

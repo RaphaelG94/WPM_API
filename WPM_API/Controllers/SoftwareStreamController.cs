@@ -266,20 +266,20 @@ namespace WPM_API.Controllers
 
     public class SoftwareStreamViewModel
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string UpdateSettings { get; set; }
-        public List<SoftwareViewModel> StreamMembers { get; set; }
-        public string Vendor { get; set; }
-        public string Description { get; set; }
-        public string DescriptionShort { get; set; }
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public string? UpdateSettings { get; set; }
+        public List<SoftwareViewModel>? StreamMembers { get; set; }
+        public string? Vendor { get; set; }
+        public string? Description { get; set; }
+        public string? DescriptionShort { get; set; }
         public bool GnuLicence { get; set; }
-        public string Architecture { get; set; }
-        public string Language { get; set; }
-        public string Website { get; set; }
-        public string DownloadLink { get; set; }
-        public FileRefModel Icon { get; set; }
-        public string Type { get; set; }
+        public string? Architecture { get; set; }
+        public string? Language { get; set; }
+        public string? Website { get; set; }
+        public string? DownloadLink { get; set; }
+        public FileRefModel? Icon { get; set; }
+        public string? Type { get; set; }
     }
 
     public class SoftwaresViewModel

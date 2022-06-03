@@ -1,10 +1,8 @@
-﻿using WPM_API.Data.DataContext.Interfaces;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System;
+using WPM_API.Data.DataContext.Interfaces;
 
-namespace  WPM_API.Data.DataContext.Entities
+namespace WPM_API.Data.DataContext.Entities
 {
     public class Domain : IEntity, IDeletable
     {
@@ -29,15 +27,15 @@ namespace  WPM_API.Data.DataContext.Entities
         public List<OrganizationalUnit> OrganizationalUnits { get; set; }
         public DateTime? DeletedDate { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public string CreatedByUserId { get; set; }
         public string ExecutionVMId { get; set; }
         public List<Server> Servers { get; set; }
         public List<DNS> DNS { get; set; }
         public File Office365ConfigurationXML { get; set; }
         public File DomainUserCSV { get; set; }
-        
+
     }
 }

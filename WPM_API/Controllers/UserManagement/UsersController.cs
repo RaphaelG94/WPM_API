@@ -67,25 +67,27 @@ namespace WPM_API.Controllers
         /// <returns>User</returns>
         [HttpPost]
         [Authorize(Policy = Constants.Roles.Customer)]
-        public IActionResult AddUser([FromBody] AddUserViewModel userAdd)
+        //AddUserViewModel userAdd
+        public IActionResult AddUser([FromBody] AddUserViewModelV2 userAdd)
         {
+            var sentRole = (WPM_API.Models.Role)Enum.Parse(typeof(WPM_API.Models.Role), userAdd.Role);
             // Nur ein Admin darf Admin anlegen
             if (userAdd.Admin && !CurrentUserIsInRole(Constants.Roles.Admin))
             {
                 return BadRequest("Only adminstrator can add new administrator.");
             }
             // Wenn Admin, dann kann nur SystemhouseManager sein
-            if (userAdd.Admin && userAdd.Role != ROLES.systemhouse)
+            if (userAdd.Admin && sentRole != ROLES.systemhouse)
             {
                 return BadRequest("User could not be created. An admin has to be a systemhouse-manager.");
             }
             // Wenn Customer muss Systemhouse bef�llt sein.
-            if (userAdd.Role == ROLES.customer && (string.IsNullOrEmpty(userAdd.Systemhouse) || string.IsNullOrEmpty(userAdd.Customer)))
+            if (sentRole == ROLES.customer && (string.IsNullOrEmpty(userAdd.Systemhouse) || string.IsNullOrEmpty(userAdd.Customer)))
             {
                 return BadRequest("User could not be created. A customer-manager needs a customer and a systemhouse.");
             }
             // Wenn Systemhouse, kein Customer
-            if (userAdd.Role == ROLES.systemhouse && (string.IsNullOrEmpty(userAdd.Systemhouse) || !string.IsNullOrEmpty(userAdd.Customer)))
+            if (sentRole == ROLES.systemhouse && (string.IsNullOrEmpty(userAdd.Systemhouse) || !string.IsNullOrEmpty(userAdd.Customer)))
             {
                 return BadRequest("User could not be created. A systemhouse-manager needs a customer and must not have a systemhouse.");
             }

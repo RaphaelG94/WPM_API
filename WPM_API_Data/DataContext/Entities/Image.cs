@@ -15,9 +15,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public string Name { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
         public string Update { get; set; }
         public string BuildNr { get; set; }
@@ -49,9 +49,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public Systemhouse Systemhouse { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
     }
 
@@ -67,9 +67,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public Customer Customer { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
     }
 
@@ -85,9 +85,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public Client Client { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
     }
 }

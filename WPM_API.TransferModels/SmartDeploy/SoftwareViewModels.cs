@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace  WPM_API.TransferModels.SmartDeploy
+namespace WPM_API.TransferModels.SmartDeploy
 {
     public class SoftwareAssignRefViewModel
     {
@@ -26,7 +23,7 @@ namespace  WPM_API.TransferModels.SmartDeploy
 
     public class SoftwareViewModel : SoftwareEditViewModel
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
     }
 
     public class SoftwareAddViewModel

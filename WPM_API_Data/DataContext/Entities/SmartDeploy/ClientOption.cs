@@ -22,9 +22,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public List<Parameter> Parameters { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
         public bool PEOnly { get; set; }
         public string OSType { get; set; }

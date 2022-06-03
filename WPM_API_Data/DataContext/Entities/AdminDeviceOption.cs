@@ -17,9 +17,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public List<ScriptVersion> Versions { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         public DateTime? DeletedDate { get; set; }
         public string Type { get; set; }
         public bool PEOnly { get; set; }

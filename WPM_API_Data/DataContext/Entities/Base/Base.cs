@@ -25,9 +25,9 @@ namespace  WPM_API.Data.DataContext.Entities
         public DateTime? DeletedDate { get; set; }
         public string CreatedByUserId { get; set; }
         public DateTime CreatedDate { get; set; }
-        public string UpdatedByUserId { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public string DeletedByUserId { get; set; }
+        public string? DeletedByUserId { get; set; }
         [InverseProperty("Base")]
         public virtual List<Client> Clients { get; set; }
         public string CustomerId { get; set; }
