@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WPM_API.Data.DataContext;
 
@@ -11,9 +12,10 @@ using WPM_API.Data.DataContext;
 namespace WPM_API.Data.ProjectMigration.Migrations
 {
     [DbContext(typeof(DBData))]
-    partial class DBDataModelSnapshot : ModelSnapshot
+    [Migration("20220607113416_023_FixClientEntityV2")]
+    partial class _023_FixClientEntityV2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -849,6 +851,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CloudFlag")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedByUserId")
@@ -973,6 +976,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OrganizationalUnitId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("OsId")
@@ -3203,12 +3207,15 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnName("PK_MacAddress");
 
                     b.Property<string>("Address")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ClientId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CreatedByUserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
@@ -5898,7 +5905,8 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.OrganizationalUnit", "OrganizationalUnit")
                         .WithMany()
                         .HasForeignKey("OrganizationalUnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.OS", "Os")
                         .WithMany()
@@ -6539,7 +6547,8 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.Client", "Client")
                         .WithMany("MacAddresses")
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Client");
                 });

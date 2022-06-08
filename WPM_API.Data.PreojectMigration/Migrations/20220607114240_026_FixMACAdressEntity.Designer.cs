@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WPM_API.Data.DataContext;
 
@@ -11,9 +12,10 @@ using WPM_API.Data.DataContext;
 namespace WPM_API.Data.ProjectMigration.Migrations
 {
     [DbContext(typeof(DBData))]
-    partial class DBDataModelSnapshot : ModelSnapshot
+    [Migration("20220607114240_026_FixMACAdressEntity")]
+    partial class _026_FixMACAdressEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -1,9 +1,4 @@
-﻿using WPM_API.Data.DataContext.Entities;
-using WPM_API.Models.AssetMgmt;
-using System;
-using System.Collections.Generic;
-
-namespace WPM_API.Models
+﻿namespace WPM_API.Models
 {
     public class ClientRefViewModel
     {
@@ -39,13 +34,13 @@ namespace WPM_API.Models
     }
     public class ClientAddViewModelWeb
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
         public string Uuid { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public string BaseId { get; set; }
+        public string? BaseId { get; set; }
         public string Subnet { get; set; }
-        public string CustomerName { get; set; }
+        public string? CustomerName { get; set; }
         public bool IsOnline { get; set; }
         public List<string> MacAddresses { get; set; }
         public string SerialNumber { get; set; }

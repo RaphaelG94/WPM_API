@@ -1408,6 +1408,11 @@ namespace WPM_API.Controllers.Client
                 var cep = GetCEP(customer.Id);
                 DATA.Storages.StorageEntryPoint csdp = customer.StorageEntryPoints.Find(x => x.IsCSDP == true);
 
+                if (csdp == null)
+                {
+                    return BadRequest("ERROR: The csdp does not exist or is not accessable");
+                }
+
                 // Connect to Azure Storage Account
                 AzureCommunicationService azureCustomer;
                 if (!csdp.Managed)

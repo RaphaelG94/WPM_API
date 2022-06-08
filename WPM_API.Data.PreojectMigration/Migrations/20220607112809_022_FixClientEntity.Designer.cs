@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WPM_API.Data.DataContext;
 
@@ -11,9 +12,10 @@ using WPM_API.Data.DataContext;
 namespace WPM_API.Data.ProjectMigration.Migrations
 {
     [DbContext(typeof(DBData))]
-    partial class DBDataModelSnapshot : ModelSnapshot
+    [Migration("20220607112809_022_FixClientEntity")]
+    partial class _022_FixClientEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -819,6 +821,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("AssetId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("AssetModelId")
@@ -828,30 +831,39 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("BaseLineFile1")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BaseLineFile2")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BaseLineFile3")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BiosId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CSPname")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CSPvendor")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CSPversion")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CloudFlag")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedByUserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
@@ -871,6 +883,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DownloadSeedURL")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("HardwareId")
@@ -880,9 +893,11 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("InstallScript")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("InstallationDate")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("InventoryId")
@@ -892,15 +907,19 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("JoinedDomain")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("KeyboardLayoutLinux")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("KeyboardLayoutWindows")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LanguagePackLinux")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("LastInventoryUpdate")
@@ -910,18 +929,23 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("LocalAdminPassword")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LocalAdminUsername")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Location")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MainFrequentUser")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MainUser")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Manufacturer")
@@ -931,6 +955,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ModelSeries")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -940,51 +965,64 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("OSArchitecture")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSEdition")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("OSInstallDateUTC")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("OSLanguage")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSMemorySize")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSOperatingSystemSKU")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSProductSuite")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSSettingsImageId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSType")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSTypeDevice")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OSVersion")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OrganizationalUnitId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("OsId")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PartitionEncryptionPassLinux")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Processor")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Proxy")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PurchaseId")
@@ -994,21 +1032,26 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Subnet")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TimeZoneLinux")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TimeZoneWindows")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Timezone")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UUID")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Unattend")
@@ -1021,6 +1064,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UsageStatus")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserPasswordLinux")
@@ -1030,6 +1074,7 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Vendor")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("WdsIp")
@@ -3203,12 +3248,15 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                         .HasColumnName("PK_MacAddress");
 
                     b.Property<string>("Address")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ClientId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CreatedByUserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedDate")
@@ -5877,7 +5925,8 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.Bios", "Bios")
                         .WithMany()
                         .HasForeignKey("BiosId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.Customer", "Customer")
                         .WithMany()
@@ -5898,7 +5947,8 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.OrganizationalUnit", "OrganizationalUnit")
                         .WithMany()
                         .HasForeignKey("OrganizationalUnitId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("WPM_API.Data.DataContext.Entities.OS", "Os")
                         .WithMany()
@@ -6539,7 +6589,8 @@ namespace WPM_API.Data.ProjectMigration.Migrations
                     b.HasOne("WPM_API.Data.DataContext.Entities.Client", "Client")
                         .WithMany("MacAddresses")
                         .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Client");
                 });
