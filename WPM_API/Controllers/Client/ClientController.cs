@@ -68,9 +68,11 @@ namespace WPM_API.Controllers.Client
         /// <param name="customerId"></param>
         /// <returns></returns>
         [HttpGet]
-        [Authorize(Policy = Constants.Roles.Customer)]
+        [Authorize]
+        //(Policy = Constants.Roles.Customer)
         public IActionResult GetClients([FromRoute] string customerId)
         {
+            var claims = User.Claims;
             List<ClientViewModel> clients = new List<ClientViewModel>();
             List<DATA.Client> dbEntries = UnitOfWork.Clients.GetAll("Base").Where(x => x.CustomerId == customerId).ToList();
             clients = Mapper.Map<List<DATA.Client>, List<ClientViewModel>>(dbEntries);

@@ -168,10 +168,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     })
     .AddJwtBearer("AzureADB2C", options =>
     {
+        options.Audience = "97ced207-3b0d-446c-a189-0d8aecde0502";
         options.Authority = "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/";
-        options.Audience = "http://localhost:7291";
-        options.MetadataAddress =
-            "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=B2C_1_bitstreamtest_signup_signin";
+        options.MetadataAddress = "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=B2C_1_bitstreamtest_signup_signin";
     });
 
 builder.Services.AddAuthorization(auth =>
@@ -224,12 +223,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-app.UseMiddleware<PopulateClaimsMiddleware>();
 app.UseAuthorization();
 
 AppDependencyResolver.Init(app.Services);
 
 app.MapControllers();
+
+app.UseMiddleware<PopulateClaimsMiddleware>();
 
 using (var scope = app.Services.CreateScope())
 {
