@@ -67,7 +67,6 @@ namespace WPM_API.Code.Infrastructure.LogOn
         {
             var handler = new JwtSecurityTokenHandler();
 
-            var temp = loggedClaims.GetAsClaims();
             var token = new JwtSecurityToken(
                 issuer: _tokenAuthOptions.Issuer,
                 audience: _tokenAuthOptions.Audience,

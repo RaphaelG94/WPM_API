@@ -228,7 +228,6 @@ app.UseAuthorization();
 AppDependencyResolver.Init(app.Services);
 
 app.MapControllers();
-
 app.UseMiddleware<PopulateClaimsMiddleware>();
 
 using (var scope = app.Services.CreateScope())

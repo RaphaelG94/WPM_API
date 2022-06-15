@@ -1,4 +1,10 @@
-﻿using System.Security.Claims;
+﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using System.Security.Claims;
+using WPM_API.Data.DataContext;
+using WPM_API.Data.DataContext.Entities;
+using static WPM_API.Common.Constants;
 
 namespace WPM_API.Middlewares
 {
@@ -12,57 +18,89 @@ namespace WPM_API.Middlewares
             _next = next;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async System.Threading.Tasks.Task InvokeAsync(HttpContext context, DBData dbData)
         {
             if (context.User.Identity.IsAuthenticated)
             {
-                // TODO: Enable all anonymous endpoints to be accessed
-                bool skip = false;
-                foreach (string path in AnonymousPaths)
+
+                string token = context.Request.Headers["Authorization"];
+                if (string.IsNullOrEmpty(token))
                 {
-                    if (context.Request.Path.ToString().Contains(path))
-                    {
-                        skip = true;
-                        break;
-                    }
+                    context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
+                    await _next(context);
                 }
-                if (!skip)
+                else
                 {
-                    string token = context.Request.Headers["Authorization"];
-                    if (string.IsNullOrEmpty(token))
+                    if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
                     {
-                        context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
-                        await _next(context);
-                    }
-                    else
-                    {
-                        if (token.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        if (string.IsNullOrEmpty(token))
+                        {
+                            context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
+                            await _next(context);
+                        }
+                        else
                         {
                             token = token.Substring("Bearer ".Length).Trim();
                             var identity = context.User.Identity as ClaimsIdentity;
                             if (identity != null)
                             {
                                 IEnumerable<Claim> claims = identity.Claims;
-                            }
-                            if (string.IsNullOrEmpty(token))
-                            {
-                                context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
-                                await _next(context);
-                            }
-                            else
-                            {
-                                // todo: check if token is valid -> local or microsoft
-                                // TODO: find user in db and add claims if found
-                                await _next(context);
-                            }
-                        }
+                                var isAdminClaim = context.User.FindFirst(BitstreamClaimTypes.Admin);
+                                if (isAdminClaim == null)
+                                {
+                                    // Find user in db and populate new claims
+                                    string userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                                    List<Claim> emailClaims = claims.Where(x => x.Type.ToString() == "emails").ToList();
+                                    if (userId == null)
+                                    {
+                                        context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
+                                        await _next(context);
+                                    }
+                                    User user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).FirstOrDefault(x => x.B2CID == userId);
+                                    if (user == null)
+                                    {
+                                        foreach (Claim emailClaim in emailClaims)
+                                        {
+                                            // Check with email address
+                                            user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).FirstOrDefault(x => x.Email == emailClaim.Value);
+                                            if (user != null)
+                                            {
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (user != null)
+                                    {
+                                        JsonSerializerSettings serializerSettings = new JsonSerializerSettings { Formatting = Formatting.None, ContractResolver = new CamelCasePropertyNamesContractResolver() };
 
+                                        List<string> userRoles = new List<string>();
+                                        foreach (UserRole userRole in user.UserRoles)
+                                        {
+                                            userRoles.Add(userRole.Role.Name);
+                                        }
+                                        List<Claim> newClaims = new List<Claim>();
+                                        newClaims.Add(new Claim(BitstreamClaimTypes.UserId, user.Id));
+                                        newClaims.Add(new Claim(BitstreamClaimTypes.Name, user.UserName));
+                                        newClaims.Add(new Claim(BitstreamClaimTypes.Admin, user.Admin.ToString()));
+                                        newClaims.Add(new Claim(BitstreamClaimTypes.Sub, user.Login));
+                                        newClaims.Add(new Claim(ClaimTypes.Role, string.Join(",", userRoles)));
+                                        if (user.Customer != null)
+                                        {
+                                            newClaims.Add(new Claim(BitstreamClaimTypes.Customer, JsonConvert.SerializeObject(new { Id = user.CustomerId, Name = user.Customer.Name }, serializerSettings)));
+                                        }
+                                        if (user.Systemhouse != null)
+                                        {
+                                            newClaims.Add(new Claim(BitstreamClaimTypes.Systemhouse, JsonConvert.SerializeObject(new { Id = user.SystemhouseId, Name = user.Systemhouse.Name }, serializerSettings)));
+                                        }
+                                    }
+
+                                    // ;
+                                    // new Claim(BitstreamClaimTypes.GeneratedDate, GeneratedDateTicks.ToString());
+                                }
+                            }
+                            await _next(context);
+                        }
                     }
-                }
-                else
-                {
-                    context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
-                    await _next(context);
                 }
             }
             else

@@ -90,6 +90,8 @@ namespace WPM_API.Data.DataContext.Entities
             }
         }
 
+        public string? B2CID { get; set; }
+
 
     }
 
