@@ -64,14 +64,14 @@ namespace WPM_API.Controllers
         }
 
         [HttpGet]
-        [Route("addClaimsMSAL")]
-        [Authorize]
-        public IActionResult AddClaims()
+        [Route("getClaimsForUi")]
+        [Authorize(Policy = Constants.Policies.Admin)]
+        public IActionResult GetClaimsForUIPermissions()
         {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-            if (identity != null)
+            List<Claim> claims = new List<Claim>();
+            foreach (ClaimsIdentity userIdentity in HttpContext.User.Identities)
             {
-                IEnumerable<Claim> claims = identity.Claims;
+                claims.AddRange(userIdentity.Claims.ToList());
             }
             return Ok();
         }

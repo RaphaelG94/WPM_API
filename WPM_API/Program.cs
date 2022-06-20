@@ -186,7 +186,7 @@ builder.Services.AddAuthorization(auth =>
         context => context.User.HasClaim(claim =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse)))
             && context.User.HasClaim(claim => (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
-         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
         //.AddAuthenticationSchemes("AzureADB2C")
         .Build());
 
@@ -196,7 +196,7 @@ builder.Services.AddAuthorization(auth =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse))
             || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
         //.AddAuthenticationSchemes("AzureADB2C")
-        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
         .Build());
 
     // Customer_Manager = Admin or Systemhouse_Manager or Customer_Manager

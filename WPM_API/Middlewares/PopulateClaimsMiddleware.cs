@@ -56,13 +56,13 @@ namespace WPM_API.Middlewares
                                         context.Response.StatusCode = (int)System.Net.HttpStatusCode.Forbidden;
                                         await _next(context);
                                     }
-                                    User user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).FirstOrDefault(x => x.B2CID == userId);
+                                    User user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).Include("UserRoles.Role").FirstOrDefault(x => x.B2CID == userId);
                                     if (user == null)
                                     {
                                         foreach (Claim emailClaim in emailClaims)
                                         {
                                             // Check with email address
-                                            user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).FirstOrDefault(x => x.Email == emailClaim.Value);
+                                            user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).Include("UserRoles.Role").FirstOrDefault(x => x.Email == emailClaim.Value);
                                             if (user != null)
                                             {
                                                 break;
@@ -71,6 +71,15 @@ namespace WPM_API.Middlewares
                                     }
                                     if (user != null)
                                     {
+                                        if (user.B2CID == null || user.B2CID == String.Empty)
+                                        {
+                                            // Save b2c userid in user entry
+                                            user.B2CID = userId;
+                                            dbData.Users.Update(user);
+                                            dbData.SaveChanges();
+                                        }
+
+                                        // Populate claims
                                         JsonSerializerSettings serializerSettings = new JsonSerializerSettings { Formatting = Formatting.None, ContractResolver = new CamelCasePropertyNamesContractResolver() };
 
                                         List<string> userRoles = new List<string>();
@@ -92,10 +101,11 @@ namespace WPM_API.Middlewares
                                         {
                                             newClaims.Add(new Claim(BitstreamClaimTypes.Systemhouse, JsonConvert.SerializeObject(new { Id = user.SystemhouseId, Name = user.Systemhouse.Name }, serializerSettings)));
                                         }
-                                    }
 
-                                    // ;
-                                    // new Claim(BitstreamClaimTypes.GeneratedDate, GeneratedDateTicks.ToString());
+                                        newClaims.AddRange(claims);
+                                        var appIdentity = new ClaimsIdentity(newClaims);
+                                        context.User.AddIdentity(appIdentity);
+                                    }
                                 }
                             }
                             await _next(context);
