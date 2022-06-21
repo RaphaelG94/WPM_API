@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System.Security.Claims;
 using WPM_API.Data.DataContext.Projections.Users;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using static WPM_API.Common.Constants;
 
 namespace WPM_API.Code.Infrastructure.LogOn
@@ -48,11 +45,11 @@ namespace WPM_API.Code.Infrastructure.LogOn
 
         public LoggedClaims(List<Claim> claims)
         {
-            UserId = claims.Single(x => x.Type == BitstreamClaimTypes.UserId).Value;
-            Login = claims.Single(x => x.Type == ClaimTypes.Name).Value;
-            Name = claims.Single(x => x.Type == BitstreamClaimTypes.Name).Value;
-            Admin = claims.Single(x => x.Type == BitstreamClaimTypes.Admin).Value == "true";
-            Roles = claims.Single(x => x.Type == ClaimTypes.Role).Value.Split(",".ToCharArray());
+            UserId = claims.SingleOrDefault(x => x.Type == BitstreamClaimTypes.UserId)?.Value;
+            Login = claims.SingleOrDefault(x => x.Type == ClaimTypes.Name)?.Value;
+            Name = claims.FirstOrDefault(x => x.Type == BitstreamClaimTypes.Name)?.Value;
+            Admin = claims.SingleOrDefault(x => x.Type == BitstreamClaimTypes.Admin)?.Value == "true";
+            Roles = claims.SingleOrDefault(x => x.Type == ClaimTypes.Role)?.Value.Split(",".ToCharArray());
             if (claims.Exists(x => x.Type == BitstreamClaimTypes.Customer))
             {
                 Customer = claims.Single(x => x.Type == BitstreamClaimTypes.Customer).Value;
@@ -61,7 +58,11 @@ namespace WPM_API.Code.Infrastructure.LogOn
             {
                 Systemhouse = claims.Single(x => x.Type == BitstreamClaimTypes.Systemhouse).Value;
             }
-            GeneratedDateTicks = long.Parse(claims.Single(x => x.Type == BitstreamClaimTypes.GeneratedDate).Value);
+            var generatedDateTicks = claims.SingleOrDefault(x => x.Type == BitstreamClaimTypes.GeneratedDate)?.Value;
+            if (generatedDateTicks != null)
+            {
+                GeneratedDateTicks = long.Parse(generatedDateTicks);
+            }
         }
 
         public List<Claim> GetAsClaims()

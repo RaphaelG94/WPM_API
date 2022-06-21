@@ -87,6 +87,8 @@ namespace WPM_API.Middlewares
                                         {
                                             userRoles.Add(userRole.Role.Name);
                                         }
+
+                                        // TODO neuer scoped service als claims provider
                                         List<Claim> newClaims = new List<Claim>();
                                         newClaims.Add(new Claim(BitstreamClaimTypes.UserId, user.Id));
                                         newClaims.Add(new Claim(BitstreamClaimTypes.Name, user.UserName));
@@ -102,7 +104,7 @@ namespace WPM_API.Middlewares
                                             newClaims.Add(new Claim(BitstreamClaimTypes.Systemhouse, JsonConvert.SerializeObject(new { Id = user.SystemhouseId, Name = user.Systemhouse.Name }, serializerSettings)));
                                         }
 
-                                        newClaims.AddRange(claims);
+                                        // newClaims.AddRange(claims);
                                         var appIdentity = new ClaimsIdentity(newClaims);
                                         context.User.AddIdentity(appIdentity);
                                     }

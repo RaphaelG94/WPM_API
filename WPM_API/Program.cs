@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using WPM_API.Code.Infrastructure;
@@ -21,10 +23,10 @@ using WPM_API.Common.Files.Impl;
 using WPM_API.Common.Files.Models;
 using WPM_API.Data;
 using WPM_API.Data.DataContext;
+using WPM_API.Data.DataContext.Entities;
 using WPM_API.Data.Files;
 using WPM_API.Data.Files.Impl;
 using WPM_API.Data.Infrastructure;
-using WPM_API.Middlewares;
 using WPM_API.Options;
 using static WPM_API.Common.Constants;
 
@@ -171,6 +173,63 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.Audience = "97ced207-3b0d-446c-a189-0d8aecde0502";
         options.Authority = "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/";
         options.MetadataAddress = "https://bitstreamtest.b2clogin.com/bitstreamtest.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=B2C_1_bitstreamtest_signup_signin";
+        options.Events = new JwtBearerEvents();
+        options.Events.OnTokenValidated = async context =>
+        {
+            var dbData = context.HttpContext.RequestServices.GetRequiredService<DBData>();
+            var identity = context.Principal.Identity as ClaimsIdentity;
+            IEnumerable<Claim> claims = identity.Claims;
+            List<Claim> newClaims = new List<Claim>();
+            var isAdminClaim = context.Principal.FindFirst(BitstreamClaimTypes.Admin);
+            if (isAdminClaim == null)
+            {
+                string userId = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                List<Claim> emailClaims = claims.Where(x => x.Type.ToString() == "emails").ToList();
+                if (userId != null)
+                {
+                    User user = dbData.Users.Include(x => x.Customer).Include(x => x.Systemhouse).Include("UserRoles.Role").FirstOrDefault(x => x.B2CID == userId);
+                    if (user != null)
+                    {
+                        // Save b2c user id in db
+                        if (user.B2CID == null || user.B2CID == String.Empty)
+                        {
+                            // Save b2c userid in user entry
+                            user.B2CID = userId;
+                            dbData.Users.Update(user);
+                            dbData.SaveChanges();
+                        }
+
+                        // Populate claims
+                        JsonSerializerSettings serializerSettings = new JsonSerializerSettings { Formatting = Formatting.None, ContractResolver = new CamelCasePropertyNamesContractResolver() };
+
+                        List<string> userRoles = new List<string>();
+                        foreach (UserRole userRole in user.UserRoles)
+                        {
+                            userRoles.Add(userRole.Role.Name);
+                        }
+
+                        newClaims.Add(new Claim(BitstreamClaimTypes.UserId, user.Id));
+                        newClaims.Add(new Claim(BitstreamClaimTypes.Name, user.UserName));
+                        newClaims.Add(new Claim(BitstreamClaimTypes.Admin, user.Admin.ToString()));
+                        newClaims.Add(new Claim(BitstreamClaimTypes.Sub, user.Login));
+                        newClaims.Add(new Claim(ClaimTypes.Role, string.Join(",", userRoles)));
+                        if (user.Customer != null)
+                        {
+                            newClaims.Add(new Claim(BitstreamClaimTypes.Customer, JsonConvert.SerializeObject(new { Id = user.CustomerId, Name = user.Customer.Name }, serializerSettings)));
+                        }
+                        if (user.Systemhouse != null)
+                        {
+                            newClaims.Add(new Claim(BitstreamClaimTypes.Systemhouse, JsonConvert.SerializeObject(new { Id = user.SystemhouseId, Name = user.Systemhouse.Name }, serializerSettings)));
+                        }
+
+                        // newClaims.AddRange(claims);
+                        var appIdentity = new ClaimsIdentity(newClaims);
+                        context.Principal.AddIdentity(appIdentity);
+                    }
+                }
+            }
+            else { }
+        };
     });
 
 builder.Services.AddAuthorization(auth =>
@@ -178,35 +237,40 @@ builder.Services.AddAuthorization(auth =>
     auth.DefaultPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
-        //.AddAuthenticationSchemes("AzureADB2C")
         .Build();
 
     // Admin = Adminflag + Systemhouse_Manager
     auth.AddPolicy(Policies.Admin, policyBuilder => policyBuilder.RequireAssertion(
-        context => context.User.HasClaim(claim =>
-               (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse)))
-            && context.User.HasClaim(claim => (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
+        context =>
+        {
+            return context.User.HasClaim(claim =>
+                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse)))
+        && context.User.HasClaim(claim => (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value)));
+        })
          .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
-        //.AddAuthenticationSchemes("AzureADB2C")
         .Build());
 
     // Systemhouse_Manager = Admin or Systemhouse_Manager
     auth.AddPolicy(Policies.Systemhouse, policyBuilder => policyBuilder.RequireAssertion(
-        context => context.User.HasClaim(claim =>
+        context =>
+        {
+            return context.User.HasClaim(claim =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse))
-            || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
-        //.AddAuthenticationSchemes("AzureADB2C")
+            || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value)));
+        })
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
         .Build());
 
     // Customer_Manager = Admin or Systemhouse_Manager or Customer_Manager
     auth.AddPolicy(Policies.Customer, policyBuilder => policyBuilder.RequireAssertion(
-        context => context.User.HasClaim(claim =>
+        context =>
+        {
+            return context.User.HasClaim(claim =>
                (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Customer))
             || (claim.Type == ClaimTypes.Role && claim.Value.Contains(Roles.Systemhouse))
-            || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value))))
+            || (claim.Type == BitstreamClaimTypes.Admin && bool.Parse(claim.Value)));
+        })
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "AzureADB2C")
-        //.AddAuthenticationSchemes("AzureADB2C")
         .Build());
 });
 
@@ -223,12 +287,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.MapControllers();
+//app.UseMiddleware<PopulateClaimsMiddleware>();
 app.UseAuthorization();
+
 
 AppDependencyResolver.Init(app.Services);
 
-app.MapControllers();
-app.UseMiddleware<PopulateClaimsMiddleware>();
 
 using (var scope = app.Services.CreateScope())
 {

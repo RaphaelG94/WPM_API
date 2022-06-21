@@ -10,9 +10,11 @@ using WPM_API.Code.Infrastructure.LogOn;
 using WPM_API.Common;
 using WPM_API.Common.Utils;
 using WPM_API.Data.DataContext.Entities;
+using WPM_API.Data.DataContext.Projections.Users;
 using WPM_API.Models;
 using WPM_API.Models.Api.Token;
 using WPM_API.Options;
+using static WPM_API.Common.Constants;
 
 namespace WPM_API.Controllers
 {
@@ -65,15 +67,35 @@ namespace WPM_API.Controllers
 
         [HttpGet]
         [Route("getClaimsForUi")]
-        [Authorize(Policy = Constants.Policies.Admin)]
+        [Authorize(Policy = Constants.Policies.Systemhouse)]
         public IActionResult GetClaimsForUIPermissions()
         {
-            List<Claim> claims = new List<Claim>();
+            List<string> emailAddresses = new List<string>();
+            AccountProjection account = null;
+
             foreach (ClaimsIdentity userIdentity in HttpContext.User.Identities)
             {
-                claims.AddRange(userIdentity.Claims.ToList());
+                emailAddresses.Add(userIdentity.Claims.FirstOrDefault(x => x.Type == BitstreamClaimTypes.Sub)?.Value);
             }
-            return Ok();
+            foreach (string emailAddress in emailAddresses)
+            {
+                if (emailAddress != null && emailAddress.Length > 0)
+                {
+                    account = UnitOfWork.Users.GetAccountByLoginOrNull(emailAddress);
+                    if (account != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Generate a token of account projection
+            DateTime? expires = DateTime.UtcNow.AddHours(2);
+            var token = logonManager.GenerateToken(new LoggedClaims(account), expires);
+
+            var result = new TokenRetrieveModel { IsAuthenticated = true, Token = token, TokenExpiresAt = expires };
+
+            return new OkObjectResult(JsonConvert.SerializeObject(result, serializerSettings));
         }
 
         [HttpGet]
